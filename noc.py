@@ -58,11 +58,16 @@ def calc_flux(
 
     # run regression
     popt, pcov = curve_fit(func, tau, phi, p0=(0.0, 0.0, 1.0, 1.0))
+    # print(popt)
+    # print(pcov)
 
     mass_ratio = molecular_mass_gas / molecular_mass_air
 
+    # air pressure in SI units
+    air_pressure  = air_pressure * 100.0
+
     # air density
-    density = air_pressure * 100.0 / air_temperature / gas_constant
+    density = air_pressure / air_temperature / gas_constant
 
     # flux in SI units [kg m-2 s-1]
     factor = density * mass_ratio * headspace_volume / chamber_base_area * deln / delt
@@ -79,14 +84,16 @@ def calc_flux(
     if out_units == "kg m-2 s-1":
         flux_out_units = flux_si
         stddev_out_units = stddev_si
+
     if out_units == "mg m-2 h-1":
         flux_out_units = flux_si * 1e6 * 3600
         stddev_out_units = stddev_si * 1e6 * 3600
 
     ambient_mixing_ratio = nbeg + deln * popt[1]
 
-    print("flux              = %.8f %s" % (flux_out_units, out_units))
-    print("std deviation     = %.8f %s" % (stddev_out_units, out_units))
+    print("flux          = %.8f %s"% (flux_out_units, out_units))
+    print("std deviation = %.8f %s"% (stddev_out_units, out_units))
+    print()
 
     # unscale
     mixing_ratio_fit = nbeg + deln * func(tau, *popt)
@@ -132,11 +139,12 @@ if __name__ == "__main__":
         )
         ambient_mixing_ratio = ambient_mixing_ratio*1e9
         print('ambient mixing ratio = %.0f ppb'% ambient_mixing_ratio)
+        print()
 
         # plotting
         plt.plot(time, mixing_ratio_fit * 1e9, "g--")
         plt.plot(time, mixing_ratio * 1e9)
-        plt.title(f + "\n Flux = %.8f mg CH4 m-2 h-1" % flux)
+        plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(flux, stddev))
         plt.xlabel("time [s]")
         plt.ylabel("CH4 mixing ratio [ppb]")
         plt.savefig(f + ".png")
