@@ -23,7 +23,7 @@ def calc_flux(
     water_mixing_ratio=0.0,
 ):
     """
-    Computes the soil flux based on the Vented Flux Chamber Method
+    Computes the soil flux based on the Non-steady-state Open Flux Chamber Method
 
     Parameters:
         time: array(float)
@@ -57,13 +57,13 @@ def calc_flux(
     tau = (time - tbeg) / delt
 
     # run regression
-    popt, pcov = curve_fit(func, tau, phi, p0=(0.0, 0.0, 1.0, 1.0))
+    popt, pcov = curve_fit(func, tau, phi, p0=(0.0, 0.0, 1.0, 1.0), check_finite=True)
     # print(popt)
     # print(pcov)
 
     mass_ratio = molecular_mass_gas / molecular_mass_air
 
-    # air pressure in SI units
+    # convert air pressure to SI units
     air_pressure  = air_pressure * 100.0
 
     # air density
@@ -89,13 +89,13 @@ def calc_flux(
         flux_out_units = flux_si * 1e6 * 3600
         stddev_out_units = stddev_si * 1e6 * 3600
 
-    ambient_mixing_ratio = nbeg + deln * popt[1]
-
     print("flux          = %.8f %s"% (flux_out_units, out_units))
     print("std deviation = %.8f %s"% (stddev_out_units, out_units))
     print()
 
-    # unscale
+
+    # redimensionalize
+    ambient_mixing_ratio = nbeg + deln * popt[1]
     mixing_ratio_fit = nbeg + deln * func(tau, *popt)
 
     return flux_out_units, stddev_out_units, ambient_mixing_ratio, mixing_ratio_fit 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
         # plotting
         plt.plot(time, mixing_ratio_fit * 1e9, "g--")
-        plt.plot(time, mixing_ratio * 1e9)
+        plt.plot(time, mixing_ratio * 1e9,'.')
         plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(flux, stddev))
         plt.xlabel("time [s]")
         plt.ylabel("CH4 mixing ratio [ppb]")
