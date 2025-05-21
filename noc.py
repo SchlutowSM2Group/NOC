@@ -97,8 +97,9 @@ def calc_flux(
     # redimensionalize
     ambient_mixing_ratio = nbeg + deln * popt[1]
     mixing_ratio_fit = nbeg + deln * func(tau, *popt)
+    dilution_rate = popt[3] / delt
 
-    return flux_out_units, stddev_out_units, ambient_mixing_ratio, mixing_ratio_fit 
+    return flux_out_units, stddev_out_units, ambient_mixing_ratio, dilution_rate, mixing_ratio_fit 
 
 
 if __name__ == "__main__":
@@ -129,7 +130,7 @@ if __name__ == "__main__":
         mixing_ratio = df.CH4_7810.to_numpy() * 1e-9
 
         # call flux calculator
-        flux, stddev, ambient_mixing_ratio, mixing_ratio_fit = calc_flux(
+        flux, stddev, ambient_mixing_ratio, dilution_rate, mixing_ratio_fit = calc_flux(
             time,
             mixing_ratio,
             chamber_base_area,
@@ -138,7 +139,8 @@ if __name__ == "__main__":
             out_units="mg m-2 h-1",
         )
         ambient_mixing_ratio = ambient_mixing_ratio*1e9
-        print('ambient mixing ratio = %.0f ppb'% ambient_mixing_ratio)
+        print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
+        print('dilution exchange rate = %.6f s-1'% dilution_rate)
         print()
 
         # plotting
