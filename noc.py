@@ -2,7 +2,6 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 
-
 def func(t, t0, p0, p1, p2):
     return np.where(t < t0, p0, p0 + p1 * (1.0 - np.exp(-p2 * (t - t0))))
 
@@ -106,5 +105,4 @@ def calc_flux(
             "mixing_ratio_fit" : mixing_ratio_fit 
     }
 
-    # return flux_out_units, stddev_out_units, ambient_mixing_ratio, dilution_rate, mixing_ratio_fit 
 
