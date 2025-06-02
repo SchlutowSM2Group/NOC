@@ -44,6 +44,7 @@ for f in flist:
 
     print("flux          = %.8f mg m-2 h-1"% results['flux'])
     print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
+    print("R squared     = %.4f "% results['r_squared'])
     print()
 
     ambient_mixing_ratio = results['ambient_mixing_ratio']*1e9

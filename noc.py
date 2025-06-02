@@ -31,7 +31,7 @@ def calc_flux(
     """
 
     gas_constant = 287.052874247  # specific gas constant of dry air [J kg-1 K-1]
-    molecular_mass_air = 28.96  # molecular weight of air [g mol-1]
+    molecular_mass_air = 28.96  # molecular weight of dry air [g mol-1]
 
     if gas == "CH4":
         molecular_mass_gas = 16.04  # molecular weight of CH4 [g mol-1]
@@ -58,7 +58,8 @@ def calc_flux(
             tau.squeeze(), 
             phi.squeeze(), 
             p0=(0.0, 0.0, 1.0, 1.0), 
-            check_finite=True
+            check_finite=True,
+            nan_policy='omit'
             )
     # print(popt)
     # print(pcov)
@@ -82,6 +83,12 @@ def calc_flux(
         + 2.0 * pcov[2, 3] / popt[2] / popt[3]
     )
 
+    # Coefficient of determination R2
+    residuals = phi - func(tau, *popt)
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((phi-np.mean(phi))**2)
+    r_squared = 1 - (ss_res / ss_tot)
+
     # determine flux and its standard deviation in desired output units
     if out_units == "kg m-2 s-1":
         flux_out_units = flux_si
@@ -101,6 +108,7 @@ def calc_flux(
             "flux" : flux_out_units, 
             "std_dev" : stddev_out_units, 
             "ambient_mixing_ratio" : ambient_mixing_ratio, 
+            "r_squared" : r_squared,
             "dilution_rate" : dilution_rate, 
             "mixing_ratio_fit" : mixing_ratio_fit 
     }
