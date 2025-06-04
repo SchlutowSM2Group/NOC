@@ -12,7 +12,7 @@ def calc_flux(
     chamber_base_area,
     headspace_volume,
     gas="CO2",
-    air_temperature=300.0,
+    air_temperature=20.0,
     air_pressure=1010.0,
     in_units="mol mol-1",
     out_units="kg m-2 s-1",
@@ -31,7 +31,7 @@ def calc_flux(
     """
 
     gas_constant = 287.052874247  # specific gas constant of dry air [J kg-1 K-1]
-    molecular_mass_air = 28.96  # molecular weight of air [g mol-1]
+    molecular_mass_air = 28.96  # molecular weight of dry air [g mol-1]
 
     if gas == "CH4":
         molecular_mass_gas = 16.04  # molecular weight of CH4 [g mol-1]
@@ -39,6 +39,10 @@ def calc_flux(
         molecular_mass_gas = 44.009  # molecular weight of CO2 [g mol-1]
     if gas == "N2O":
         molecular_mass_gas = 44.013 # molecular weight of N2O [g mol-1]
+
+    # water dilution correction
+    # according to Pérez-Priego et al., Plant Soil (2015) 393:229-244
+    mixing_ratio_corr = mixing_ratio / (1.0 - water_mixing_ratio)
 
     tbeg = min(time)
     tend = max(time)
@@ -55,6 +59,7 @@ def calc_flux(
     tau = (time - tbeg) / delt
 
     # run regression
+<<<<<<< HEAD
     try:
         popt, pcov = curve_fit(
                 func, 
