@@ -59,25 +59,30 @@ def calc_flux(
     tau = (time - tbeg) / delt
 
     # run regression
-<<<<<<< HEAD
+
     try:
         popt, pcov = curve_fit(
                 func, 
                 tau.squeeze(), 
                 phi.squeeze(), 
                 p0=(0.0, 0.0, 1.0, 1.0), 
-                check_finite=True
+                check_finite=True,
+		nan_policy='omit'
                 )
-        # print(popt)
-        # print(pcov)
     except RuntimeError as e:
         print(f"warning: Curve_fit failed to converge: {e}")
         return np.nan, np.full_like(time, np.nan)
 
+    # print(popt)
+    # print(pcov)
+
     mass_ratio = molecular_mass_gas / molecular_mass_air
 
-    # convert air pressure to SI units
-    air_pressure  = air_pressure * 100.0
+    # convert air pressure to SI units and take mean
+    air_pressure  = np.mean(air_pressure) * 100.0
+
+    # convert air temperature to SI units and take mean
+    air_temperature  = np.mean(air_temperature) + 273.5 
 
     # air density
     density = air_pressure / air_temperature / gas_constant
@@ -92,6 +97,12 @@ def calc_flux(
         + pcov[3, 3] / popt[3] ** 2
         + 2.0 * pcov[2, 3] / popt[2] / popt[3]
     )
+
+    # Coefficient of determination R2
+    residuals = phi - func(tau, *popt)
+    ss_res = np.sum(residuals**2)
+    ss_tot = np.sum((phi-np.mean(phi))**2)
+    r_squared = 1 - (ss_res / ss_tot)
 
     # determine flux and its standard deviation in desired output units
     if out_units == "kg m-2 s-1":
@@ -112,6 +123,7 @@ def calc_flux(
             "flux" : flux_out_units, 
             "std_dev" : stddev_out_units, 
             "ambient_mixing_ratio" : ambient_mixing_ratio, 
+            "r_squared" : r_squared,
             "dilution_rate" : dilution_rate, 
             "mixing_ratio_fit" : mixing_ratio_fit 
     }
