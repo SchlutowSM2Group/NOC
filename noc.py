@@ -37,6 +37,8 @@ def calc_flux(
         molecular_mass_gas = 16.04  # molecular weight of CH4 [g mol-1]
     if gas == "CO2":
         molecular_mass_gas = 44.009  # molecular weight of CO2 [g mol-1]
+    if gas == "N2O":
+        molecular_mass_gas = 44.013 # molecular weight of N2O [g mol-1]
 
     # water dilution correction
     # according to Pérez-Priego et al., Plant Soil (2015) 393:229-244
@@ -57,14 +59,20 @@ def calc_flux(
     tau = (time - tbeg) / delt
 
     # run regression
-    popt, pcov = curve_fit(
-            func, 
-            tau.squeeze(), 
-            phi.squeeze(), 
-            p0=(0.0, 0.0, 1.0, 1.0), 
-            check_finite=True,
-            nan_policy='omit'
-            )
+
+    try:
+        popt, pcov = curve_fit(
+                func, 
+                tau.squeeze(), 
+                phi.squeeze(), 
+                p0=(0.0, 0.0, 1.0, 1.0), 
+                check_finite=True,
+		nan_policy='omit'
+                )
+    except RuntimeError as e:
+        print(f"warning: Curve_fit failed to converge: {e}")
+        return np.nan, np.full_like(time, np.nan)
+
     # print(popt)
     # print(pcov)
 
