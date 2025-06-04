@@ -30,6 +30,12 @@ for f in flist:
 
     # read mole mixing ratio of CH4 [ppb mol mol-1] from dataframe
     mixing_ratio = df.CH4_7810.to_numpy() * 1e-9
+    # H2O mixing ratio in ppm
+    water_mixing_ratio = df.H2O_7810.to_numpy() * 1e-6
+    # Air temperature in deg C
+    air_temperature = df.AirTemp.to_numpy() 
+    # Air pressure in hPa
+    air_pressure = df.AirPres.to_numpy()
 
     # call flux calculator
     results = noc.calc_flux(
@@ -37,6 +43,9 @@ for f in flist:
         mixing_ratio,
         chamber_base_area,
         headspace_volume,
+        water_mixing_ratio=water_mixing_ratio,
+        air_temperature=air_temperature,
+        air_pressure=air_pressure,
         gas="CH4",
         out_units="mg m-2 h-1",
     )

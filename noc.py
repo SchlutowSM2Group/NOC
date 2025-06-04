@@ -12,7 +12,7 @@ def calc_flux(
     chamber_base_area,
     headspace_volume,
     gas="CO2",
-    air_temperature=300.0,
+    air_temperature=20.0,
     air_pressure=1010.0,
     in_units="mol mol-1",
     out_units="kg m-2 s-1",
@@ -37,6 +37,10 @@ def calc_flux(
         molecular_mass_gas = 16.04  # molecular weight of CH4 [g mol-1]
     if gas == "CO2":
         molecular_mass_gas = 44.009  # molecular weight of CO2 [g mol-1]
+
+    # water dilution correction
+    # according to Pérez-Priego et al., Plant Soil (2015) 393:229-244
+    mixing_ratio_corr = mixing_ratio / (1.0 - water_mixing_ratio)
 
     tbeg = min(time)
     tend = max(time)
@@ -66,8 +70,11 @@ def calc_flux(
 
     mass_ratio = molecular_mass_gas / molecular_mass_air
 
-    # convert air pressure to SI units
-    air_pressure  = air_pressure * 100.0
+    # convert air pressure to SI units and take mean
+    air_pressure  = np.mean(air_pressure) * 100.0
+
+    # convert air temperature to SI units and take mean
+    air_temperature  = np.mean(air_temperature) + 273.5 
 
     # air density
     density = air_pressure / air_temperature / gas_constant
