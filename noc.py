@@ -67,7 +67,7 @@ def calc_flux(
                 phi.squeeze(), 
                 p0=(0.0, 0.0, 1.0, 1.0), 
                 check_finite=True,
-		nan_policy='omit'
+		        nan_policy='omit'
                 )
     except RuntimeError as e:
         print(f"warning: Curve_fit failed to converge: {e}")

@@ -10,15 +10,15 @@ headspace_volume = 0.017207387  # [m3] chamber volume for /Portable/TVC2023_2023
 chamber_base_area = 0.047143525  # [m2] chamber base area
 
 flist = (
-    #"./fixed/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
-    #"./fixed/TVC2024_2024_6_29_10_52_3_5_2.csv",
-    #"./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
-    #"./fixed/TVC2024_2024_6_29_15_04_2_5_7.csv",
-    #"./Portable/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
+    "./fixed/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
+    "./fixed/TVC2024_2024_6_29_10_52_3_5_2.csv",
+    "./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
+    "./fixed/TVC2024_2024_6_29_15_04_2_5_7.csv",
+    "./Portable/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
     "./Portable/TVC2023_2023_7_11_09_45_5_2_1.csv",  # best
-    #"./Portable/TVC2023_2023_7_11_10_18_5_2_2.csv",
-    #"./Portable/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
-    #"./Portable/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
+    "./Portable/TVC2023_2023_7_11_10_18_5_2_2.csv",
+    "./Portable/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
+    "./Portable/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
 )
 
 for f in flist:
@@ -60,6 +60,9 @@ for f in flist:
     print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
     print('dilution exchange rate = %.6f s-1'% results['dilution_rate'])
     print()
+
+    equilibration_period = 4.0 / results['dilution_rate']
+    print("estimated equlibration period = %.0f s"% equilibration_period)
 
     # plotting
     plt.plot(time, results['mixing_ratio_fit'] * 1e9, "g--")

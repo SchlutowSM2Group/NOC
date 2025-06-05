@@ -16,6 +16,10 @@ colnames(df)= headers
 minutes <- matrix(df$Minute_7810, ncol=1)
 seconds <- matrix(df$Second_7810, ncol=1)
 ch4 <- matrix(df$CH4_7810, ncol=1)
+air_temperature <- matrix(df$AirTemp, ncol=1)
+air_pressure <- matrix(df$AirPres, ncol=1)
+h2o <- matrix(df$H2O_7810, ncol=1)
+
 
 # compose time from dataframe
 time <- minutes * 60.0 + seconds
@@ -23,11 +27,17 @@ time <- minutes * 60.0 + seconds
 # read mole mixing ratio of CH4 [ppb mol mol-1] from dataframe
 mixing_ratio <- ch4 * 1e-9
 
+# read mole mixing ratio of H2O [ppm mol mol-1] from dataframe
+water_mixing_ratio <- h2o * 1e-6
+
 results <- calc_flux(
             time,
             mixing_ratio,
             chamber_base_area,
             headspace_volume,
+	    water_mixing_ratio=water_mixing_ratio,
+	    air_temperature=air_temperature,
+	    air_pressure=air_pressure,
             gas="CH4",
             out_units=out_units
 )
