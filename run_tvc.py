@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import noc
+#import noc as noc
+import nocx as noc
 
 plt.rcParams["text.usetex"] = True
 
