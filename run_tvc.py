@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import nocx
+import noc
 
 plt.rcParams["text.usetex"] = True
 
@@ -12,7 +12,7 @@ chamber_base_area = 0.047143525  # [m2] chamber base area
 flist = (
     "./fixed/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
     "./fixed/TVC2024_2024_6_29_10_52_3_5_2.csv",
-#    "./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
+    "./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
     "./fixed/TVC2024_2024_6_29_15_04_2_5_7.csv",
     "./Portable/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
     "./Portable/TVC2023_2023_7_11_09_45_5_2_1.csv",  # best
@@ -38,7 +38,7 @@ for f in flist:
     air_pressure = df.AirPres.to_numpy()
 
     # call flux calculator
-    results = nocx.calc_flux(
+    results = noc.calc_flux(
         time,
         mixing_ratio,
         chamber_base_area,
@@ -58,7 +58,7 @@ for f in flist:
 
     ambient_mixing_ratio = results['ambient_mixing_ratio']*1e9
     print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
-    print('dilution rate = %.6f s-1'% results['dilution_rate'])
+    print('dilution exchange rate = %.6f s-1'% results['dilution_rate'])
     print()
 
     equilibration_period = 4.0 / results['dilution_rate']
@@ -70,5 +70,5 @@ for f in flist:
     plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(results['flux'], results['std_dev']))
     plt.xlabel("time [s]")
     plt.ylabel("CH4 mixing ratio [ppb]")
-    plt.savefig(f + "_x.png")
+    plt.savefig(f + ".png")
     plt.show()

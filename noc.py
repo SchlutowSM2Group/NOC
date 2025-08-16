@@ -117,14 +117,14 @@ def calc_flux(
     # redimensionalize
     ambient_mixing_ratio = nbeg + deln * popt[1]
     mixing_ratio_fit = nbeg + deln * func(tau, *popt)
-    dilution_rate = popt[3] / delt * headspace_volume
+    dilution_rate = popt[3] / delt
 
     return {
             "flux" : flux_out_units, 
             "std_dev" : stddev_out_units, 
             "ambient_mixing_ratio" : ambient_mixing_ratio, 
             "r_squared" : r_squared,
-            "dilution_flow_rate" : dilution_rate, 
+            "dilution_rate" : dilution_rate, 
             "mixing_ratio_fit" : mixing_ratio_fit 
     }
 
