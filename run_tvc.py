@@ -58,10 +58,10 @@ for f in flist:
 
     ambient_mixing_ratio = results['ambient_mixing_ratio']*1e9
     print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
-    print('dilution flow rate = %.6f m3 s-1'% results['dilution_flow_rate'])
+    print('dilution rate = %.6f m3 s-1'% results['dilution_rate'])
     print()
 
-    equilibration_period = 4.0 / results['dilution_flow_rate']
+    equilibration_period = 4.0 / results['dilution_rate']
     print("estimated equlibration period = %.0f s"% equilibration_period)
 
     # plotting
@@ -70,5 +70,5 @@ for f in flist:
     plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(results['flux'], results['std_dev']))
     plt.xlabel("time [s]")
     plt.ylabel("CH4 mixing ratio [ppb]")
-    plt.savefig(f + ".png")
+    plt.savefig(f + "x.png")
     plt.show()
