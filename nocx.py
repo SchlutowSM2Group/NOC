@@ -4,14 +4,11 @@ from scipy.special import erfc
 
 
 def coth(x):
-    return np.cosh(x)/np.sinh(x)
+    return np.cosh(x) / np.sinh(x)
+
 
 def func(t, t0, p0, p1, p2, p3):
-    return np.where(
-        t < t0,
-        p0,
-        p0 + 2.0*p1/(p2+2.0*p3*coth(p3*(t-t0)))
-    )
+    return np.where(t < t0, p0, p0 + 2.0 * p1 / (p2 + 2.0 * p3 * coth(p3 * (t - t0))))
 
 
 def calc_flux(
@@ -74,7 +71,7 @@ def calc_flux(
             tau.squeeze(),
             phi.squeeze(),
             p0=(0.1, 0.5, 1.0, 1.0, 1.0),
-            #bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
+            # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
             check_finite=True,
             nan_policy="omit",
         )
@@ -100,10 +97,8 @@ def calc_flux(
     factor = density * mass_ratio * headspace_volume / chamber_base_area * deln / delt
     flux_si = factor * popt[2]
 
-    # standard deviation in SI units [kg m-2 s-1] 
-    stddev_si = np.abs(flux_si) * np.sqrt(
-        +pcov[2, 2] / popt[2] ** 2
-    )
+    # standard deviation in SI units [kg m-2 s-1]
+    stddev_si = np.abs(flux_si) * np.sqrt(+pcov[2, 2] / popt[2] ** 2)
 
     # Coefficient of determination R2
     residuals = phi - func(tau, *popt)
