@@ -52,18 +52,22 @@ for f in flist:
     )
 
 
+    print('Flux calculation')
+    print('----------------')
     print("flux          = %.8f mg m-2 h-1"% results['flux'])
     print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
     print("R squared     = %.4f "% results['r_squared'])
     print()
 
-    ambient_mixing_ratio = results['ambient_mixing_ratio']*1e9
+    ambient_mixing_ratio = results['ambient_mixing_ratio'] * 1e9
     print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
-    print('dilution exchange rate = %.6f s-1'% results['dilution_rate'])
     print()
 
-    equilibration_period = 4.0 / results['dilution_rate']
-    print("estimated equlibration period = %.0f s"% equilibration_period)
+    print('Dimensional analysis, Buckingham Pi Terms')
+    print('-----------------------------------------')
+    print('first-order pi  = %.3f'% results['first_order_pi'])
+    print('second-order pi = %.3f'% results['second_order_pi'])
+    print()
 
     # plotting
     plt.plot(time, results['mixing_ratio_fit'] * 1e9, "g--")

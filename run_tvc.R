@@ -47,5 +47,7 @@ sprintf("flux                 = %f %s",results$flux, out_units)
 sprintf("standard deviation   = %f %s",results$std_dev, out_units)
 sprintf("R squared            = %f",results$r_squared)
 sprintf("ambient mixing ratio = %f ppb",results$ambient_mixing_ratio * 1e9)
-sprintf("dilution rate        = %f s-1",results$dilution_rate)
+sprintf("Dimensional analysis, Buckingham Pi Terms")
+sprintf("first-order pi term  = %f",results$first_order_pi)
+sprintf("second-order pi term = %f",results$second_order_pi)
 
