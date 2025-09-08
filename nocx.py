@@ -80,7 +80,10 @@ def calc_flux(
         p0=(0.1, 0.5, 1.0, 1.0, 1.0, 0.0),
         # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
         check_finite=True,
-        nan_policy="omit"
+        nan_policy="omit",
+        maxfev=10000,
+        #ftol=1e-15,
+        #xtol=1e-15
     )
 
     c0 = popt[1]
