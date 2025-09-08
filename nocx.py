@@ -4,6 +4,7 @@ from scipy.special import erfc
 
 
 def coth(x):
+    """Cotangens Hyperbolicus"""
     return np.cosh(x) / np.sinh(x)
 
 
