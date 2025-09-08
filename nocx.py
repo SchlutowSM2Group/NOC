@@ -3,18 +3,20 @@ from scipy.optimize import curve_fit
 from scipy.special import erfc
 
 
-def func(t, t0, p0, p1, p2, p3, t1, p4):
+def func(t, t0, p0, p1, p2, p3, p4):
 
     def coth(x):
         """Cotangens Hyperbolicus"""
         return np.cosh(x) / np.sinh(x)
 
     def model(x):
-        return p0 + p1 * (1.0 + p4 * (p3 * coth(p3 * (x - t1)) - p2)) / (
-            p2 + p3 * coth(p3 * (x - t1)) - p4 * (p2**2 - p3**2)
+        return p0 + p1 * (1.0 + p4 * (p3 * coth(p3 * (x - t0)) - p2)) / (
+            p2 + p3 * coth(p3 * (x - t0)) - p4 * (p2**2 - p3**2)
         )
 
-    return np.piecewise(t, [t < t0, (t > t0) & (t < t1), t > t1], [p0, np.nan, model])
+    y = t.to_numpy()
+
+    return np.piecewise(y, [y < t0, y > t0], [p0, model])
 
 
 def calc_flux(
@@ -75,7 +77,7 @@ def calc_flux(
         func,
         tau.squeeze(),
         phi.squeeze(),
-        p0=(0.1, 0.5, 1.0, 1.0, 1.0, 0.1, 0.0),
+        p0=(0.1, 0.5, 1.0, 1.0, 1.0, 0.0),
         # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
         check_finite=True,
         nan_policy="omit"
