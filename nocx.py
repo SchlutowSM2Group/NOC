@@ -3,13 +3,18 @@ from scipy.optimize import curve_fit
 from scipy.special import erfc
 
 
-def coth(x):
-    """Cotangens Hyperbolicus"""
-    return np.cosh(x) / np.sinh(x)
+def func(t, t0, p0, p1, p2, p3, t1, p4):
 
+    def coth(x):
+        """Cotangens Hyperbolicus"""
+        return np.cosh(x) / np.sinh(x)
 
-def func(t, t0, p0, p1, p2, p3):
-    return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * coth(p3 * (t - t0))))
+    def model(x):
+        return p0 + p1 * (1.0 + p4 * (p3 * coth(p3 * (x - t1)) - p2)) / (
+            p2 + p3 * coth(p3 * (x - t1)) - p4 * (p2**2 - p3**2)
+        )
+
+    return np.piecewise(t, [t < t0, (t > t0) & (t < t1), t > t1], [p0, np.nan, model])
 
 
 def calc_flux(
@@ -66,19 +71,15 @@ def calc_flux(
 
     # run regression
 
-    try:
-        popt, pcov = curve_fit(
-            func,
-            tau.squeeze(),
-            phi.squeeze(),
-            p0=(0.1, 0.5, 1.0, 1.0, 1.0),
-            # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
-            check_finite=True,
-            nan_policy="omit",
-        )
-    except RuntimeError as e:
-        print(f"warning: Curve_fit failed to converge: {e}")
-        return np.nan, np.full_like(time, np.nan)
+    popt, pcov = curve_fit(
+        func,
+        tau.squeeze(),
+        phi.squeeze(),
+        p0=(0.1, 0.5, 1.0, 1.0, 1.0, 0.1, 0.0),
+        # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
+        check_finite=True,
+        nan_policy="omit"
+    )
 
     c0 = popt[1]
     F0 = popt[2]
@@ -107,7 +108,7 @@ def calc_flux(
     flux_si = factor * F0 * deln / delt
 
     # standard deviation in SI units [kg m-2 s-1]
-    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0 ** 2)
+    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
     # Coefficient of determination R2
     residuals = phi - func(tau, *popt)
@@ -116,7 +117,7 @@ def calc_flux(
     r_squared = 1 - (ss_res / ss_tot)
 
     # Dimensional analysis, Buckingham pi terms
-    first_order_pi = L / F0 
+    first_order_pi = L / F0
     N = (L**2 - D) / F0
     second_order_pi = N / F0
 
