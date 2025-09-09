@@ -1,14 +1,16 @@
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.special import erfc
+from scipy.stats import shapiro
 
-
-def coth(x):
-    """Cotangens Hyperbolicus"""
-    return np.cosh(x) / np.sinh(x)
 
 
 def func(t, t0, p0, p1, p2, p3):
+
+    def coth(x):
+        """Cotangens Hyperbolicus"""
+        return np.cosh(x) / np.sinh(x)
+
     return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * coth(p3 * (t - t0))))
 
 
@@ -115,6 +117,15 @@ def calc_flux(
     ss_tot = np.sum((phi - np.mean(phi)) ** 2)
     r_squared = 1 - (ss_res / ss_tot)
 
+    # Durbin Watson test of autocorrelation of the residuals
+    diffs = np.diff(residuals)
+    durbin_watson = np.sum(diffs**2) / ss_res
+
+    # Shapiro-Wilk test of the normality of the residuals
+    stats = shapiro(residuals)
+    shapiro_wilk_w = stats[0]
+    shapiro_wilk_p = stats[1]
+
     # Dimensional analysis, Buckingham pi terms
     first_order_pi = L / F0 
     N = (L**2 - D) / F0
@@ -134,6 +145,9 @@ def calc_flux(
         "std_dev": stddev_out_units,
         "ambient_mixing_ratio": ambient_mixing_ratio,
         "r_squared": r_squared,
+        "durbin_watson": durbin_watson,
+        "shapiro_wilk_w": shapiro_wilk_w,
+        "shapiro_wilk_p": shapiro_wilk_p,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
         "mixing_ratio_fit": mixing_ratio_fit,

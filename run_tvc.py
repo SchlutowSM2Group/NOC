@@ -56,7 +56,14 @@ for f in flist:
     print('----------------')
     print("flux          = %.8f mg m-2 h-1"% results['flux'])
     print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
-    print("R squared     = %.4f "% results['r_squared'])
+    print()
+
+    print('Statistics')
+    print('----------')
+    print("R squared      = %.4f "% results['r_squared'])
+    print("durbin watson  = %.2f "% results['durbin_watson'])
+    print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
+    print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
     print()
 
     ambient_mixing_ratio = results['ambient_mixing_ratio'] * 1e9
