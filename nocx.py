@@ -85,7 +85,7 @@ def calc_flux(
     c0 = popt[1]
     F0 = popt[2]
     L = popt[3]
-    D = popt[4]
+    Dsqr = popt[4]
     # print(popt)
     # print(pcov)
 
@@ -128,7 +128,7 @@ def calc_flux(
 
     # Dimensional analysis, Buckingham pi terms
     first_order_pi = L / F0 
-    N = (L**2 - D) / F0
+    N = (L**2 - Dsqr**2) / F0
     second_order_pi = N / F0
 
     # determine flux and its standard deviation in desired output units
