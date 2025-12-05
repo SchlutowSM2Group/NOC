@@ -43,11 +43,22 @@ results <- calc_flux(
             out_units=out_units
 )
 
+sprintf("---------------------------------------------")
+sprintf("    Flux calculation")
+sprintf("---------------------------------------------")
 sprintf("flux                 = %f %s",results$flux, out_units)
 sprintf("standard deviation   = %f %s",results$std_dev, out_units)
+sprintf("---------------------------------------------")
+sprintf("    Statistics")
+sprintf("---------------------------------------------")
 sprintf("R squared            = %f",results$r_squared)
+sprintf("durbin watson        = %f",results$durbin_watson)
+sprintf("shapiro wilk w       = %f",results$shapiro_wilk_w)
+sprintf("shapiro wilk p       = %f",results$shapiro_wilk_p)
 sprintf("ambient mixing ratio = %f ppb",results$ambient_mixing_ratio * 1e9)
-sprintf("Dimensional analysis, Buckingham Pi Terms")
+sprintf("---------------------------------------------")
+sprintf("    Dimensional analysis, Buckingham Pi Terms")
+sprintf("---------------------------------------------")
 sprintf("first-order pi term  = %f",results$first_order_pi)
 sprintf("second-order pi term = %f",results$second_order_pi)
 

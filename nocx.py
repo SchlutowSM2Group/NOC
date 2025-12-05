@@ -118,7 +118,7 @@ def calc_flux(
     r_squared = 1 - (ss_res / ss_tot)
 
     # Durbin Watson test of autocorrelation of the residuals
-    diffs = np.diff(residuals)
+    diffs = np.diff(residuals, n=1, axis=0)
     durbin_watson = np.sum(diffs**2) / ss_res
 
     # Shapiro-Wilk test of the normality of the residuals
