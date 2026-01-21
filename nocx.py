@@ -39,6 +39,7 @@ def calc_flux(
     gas="CO2",
     air_temperature=20.0,
     air_pressure=1010.0,
+    in_units="mol mol-1",
     out_units="kg m-2 s-1",
     water_mixing_ratio=0.0,
 ):
