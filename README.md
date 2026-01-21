@@ -1,17 +1,27 @@
 # NOCX - Non-Steady-State Open Chamber Extended
 
-Python library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber Extended method. To be used in python or R.
+Library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber Extended method. Can be used in Python or R.
 
 ## Installation
+
+### Python
 
 ```bash
 pip install numpy scipy pandas matplotlib
 ```
 
+### R
+
+```r
+install.packages("reticulate")
+```
+
 ## Usage
 
+### Python
+
 ```python
-import nocx 
+import nocx
 
 results = nocx.calc_flux(
     time,                    # timestamps [s]
@@ -22,6 +32,24 @@ results = nocx.calc_flux(
     air_temperature=20.0,    # [deg C]
     air_pressure=1010.0,     # [hPa]
     out_units="mg m-2 h-1",
+)
+```
+
+### R
+
+```r
+library(reticulate)
+source_python('nocx.py')
+
+results <- calc_flux(
+    time,                    # timestamps [s]
+    mixing_ratio,            # mole mixing ratio [mol mol-1]
+    chamber_base_area,       # [m2]
+    headspace_volume,        # [m3]
+    gas="CH4",               # "CH4", "CO2", or "N2O"
+    air_temperature=20.0,    # [deg C]
+    air_pressure=1010.0,     # [hPa]
+    out_units="mg m-2 h-1"
 )
 ```
 
