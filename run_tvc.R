@@ -8,7 +8,7 @@ out_units="mg m-2 h-1"
 headspace_volume = 0.017207387  # [m3] chamber volume for /Portable/TVC2023_2023_7_11_09_45_5_2_1.csv
 chamber_base_area = 0.047143525  # [m2] chamber base area
 
-flnm = "./Portable/TVC2023_2023_7_11_09_45_5_2_1.csv"
+flnm = "./data/TVC2023_2023_7_11_09_45_5_2_1.csv"
 
 headers <- read.csv(flnm, skip = 1, header = FALSE, nrows = 1)
 df <- read.csv(flnm, skip=4, header = FALSE)

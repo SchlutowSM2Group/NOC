@@ -1,6 +1,6 @@
 # NOC - Non-Steady-State Open Chamber
 
-Python library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber method.
+Python library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber method. To be used in python or R.
 
 ## Installation
 
