@@ -1,17 +1,34 @@
+"""
+NOC - Non-Steady-State Open Chamber
+
+Soil greenhouse gas flux calculation using the Non-Steady-State Open Flux Chamber method.
+"""
+
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.special import erfc
 from scipy.stats import shapiro
 
 
+# Molecular masses [g mol-1]
+MOLECULAR_MASS = {
+    "air": 28.96,
+    "CH4": 16.04,
+    "CO2": 44.009,
+    "N2O": 44.013,
+}
 
-def func(t, t0, p0, p1, p2, p3):
+# Specific gas constant of dry air [J kg-1 K-1]
+GAS_CONSTANT_AIR = 287.052874247
 
-    def coth(x):
-        """Cotangens Hyperbolicus"""
-        return np.cosh(x) / np.sinh(x)
 
-    return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * coth(p3 * (t - t0))))
+def _coth(x):
+    """Hyperbolic cotangent."""
+    return np.cosh(x) / np.sinh(x)
+
+
+def _fit_func(t, t0, p0, p1, p2, p3):
+    """Fitting function for the NOC model."""
+    return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * _coth(p3 * (t - t0))))
 
 
 def calc_flux(
@@ -22,127 +39,138 @@ def calc_flux(
     gas="CO2",
     air_temperature=20.0,
     air_pressure=1010.0,
-    in_units="mol mol-1",
     out_units="kg m-2 s-1",
     water_mixing_ratio=0.0,
 ):
     """
-    Computes the soil flux based on the Non-steady-state Open Flux Chamber Method
+    Compute soil flux using the Non-Steady-State Open Flux Chamber method.
 
-    Parameters:
-        time: array(float)
-            1D array of timestamps [s]
-        mixing_ratio: array(float)
-            1D array of Mole mixing ratio at every timestamp [mol mol-1]
-        air_pressure: scalar(float)
-            Air pressure [hPa]
+    Parameters
+    ----------
+    time : array_like
+        Timestamps [s].
+    mixing_ratio : array_like
+        Mole mixing ratio [mol mol-1].
+    chamber_base_area : float
+        Chamber base area [m2].
+    headspace_volume : float
+        Chamber headspace volume [m3].
+    gas : {"CH4", "CO2", "N2O"}, default "CO2"
+        Target gas species.
+    air_temperature : float or array_like, default 20.0
+        Air temperature [deg C].
+    air_pressure : float or array_like, default 1010.0
+        Air pressure [hPa].
+    out_units : {"kg m-2 s-1", "mg m-2 h-1"}, default "kg m-2 s-1"
+        Output flux units.
+    water_mixing_ratio : float or array_like, default 0.0
+        Water vapor mixing ratio for dilution correction [mol mol-1].
+
+    Returns
+    -------
+    dict
+        flux : float
+            Calculated soil flux.
+        std_dev : float
+            Standard deviation of flux.
+        ambient_mixing_ratio : float
+            Background gas concentration.
+        r_squared : float
+            Coefficient of determination.
+        durbin_watson : float
+            Durbin-Watson autocorrelation statistic.
+        shapiro_wilk_w : float
+            Shapiro-Wilk test statistic.
+        shapiro_wilk_p : float
+            Shapiro-Wilk p-value.
+        first_order_pi : float
+            First-order Buckingham Pi term.
+        second_order_pi : float
+            Second-order Buckingham Pi term.
+        mixing_ratio_fit : array
+            Fitted concentration curve.
+
+    References
+    ----------
+    Water dilution correction: Perez-Priego et al., Plant Soil (2015) 393:229-244
     """
+    if gas not in MOLECULAR_MASS:
+        raise ValueError(f"Unknown gas: {gas}. Choose from: CH4, CO2, N2O")
 
-    gas_constant = 287.052874247  # specific gas constant of dry air [J kg-1 K-1]
-    molecular_mass_air = 28.96  # molecular weight of dry air [g mol-1]
+    molecular_mass_gas = MOLECULAR_MASS[gas]
+    molecular_mass_air = MOLECULAR_MASS["air"]
 
-    if gas == "CH4":
-        molecular_mass_gas = 16.04  # molecular weight of CH4 [g mol-1]
-    if gas == "CO2":
-        molecular_mass_gas = 44.009  # molecular weight of CO2 [g mol-1]
-    if gas == "N2O":
-        molecular_mass_gas = 44.013  # molecular weight of N2O [g mol-1]
-
-    # water dilution correction
-    # according to Pérez-Priego et al., Plant Soil (2015) 393:229-244
+    # Water dilution correction (Perez-Priego et al., Plant Soil 2015)
     mixing_ratio_corr = mixing_ratio / (1.0 - water_mixing_ratio)
 
-    tbeg = min(time)
-    tend = max(time)
+    # Scale time and mixing ratio to [0, 1]
+    tbeg, tend = min(time), max(time)
     delt = tend - tbeg
-
-    nbeg = mixing_ratio[0]
-    nend = mixing_ratio[-1]
+    nbeg, nend = mixing_ratio[0], mixing_ratio[-1]
     deln = nend - nbeg
 
-    # scaled mole mixing ratio
-    phi = (mixing_ratio - nbeg) / deln
+    phi = (mixing_ratio - nbeg) / deln  # scaled mixing ratio
+    tau = (time - tbeg) / delt  # scaled time
 
-    # scaled time
-    tau = (time - tbeg) / delt
-
-    # run regression
-
+    # Fit model
     try:
         popt, pcov = curve_fit(
-            func,
+            _fit_func,
             tau.squeeze(),
             phi.squeeze(),
             p0=(0.1, 0.5, 1.0, 1.0, 1.0),
-            # bounds=([-0.5,0.0,-1e2,0.0,0.0],[0.5,1.0,1e2,26.0,26.0]),
             check_finite=True,
             nan_policy="omit",
         )
     except RuntimeError as e:
-        print(f"warning: Curve_fit failed to converge: {e}")
-        return np.nan, np.full_like(time, np.nan)
+        print(f"Warning: curve_fit failed to converge: {e}")
+        return None
 
-    c0 = popt[1]
-    F0 = popt[2]
-    L = popt[3]
-    Dsqr = popt[4]
-    # print(popt)
-    # print(pcov)
-
+    t0, c0, F0, L, Dsqr = popt
     mass_ratio = molecular_mass_gas / molecular_mass_air
 
-    # convert air pressure to SI units and take mean
-    air_pressure = np.mean(air_pressure) * 100.0
+    # Convert to SI units
+    pressure_si = np.mean(air_pressure) * 100.0  # hPa -> Pa
+    temperature_si = np.mean(air_temperature) + 273.15  # deg C -> K
+    density = pressure_si / temperature_si / GAS_CONSTANT_AIR
 
-    # convert air temperature to SI units and take mean
-    air_temperature = np.mean(air_temperature) + 273.5
-
-    # air density
-    density = air_pressure / air_temperature / gas_constant
-
-    # redimensionalize
-    ambient_mixing_ratio = nbeg + deln * c0
-    mixing_ratio_fit = nbeg + deln * func(tau, *popt)
-
-    # flux in SI units [kg m-2 s-1]
+    # Compute flux [kg m-2 s-1]
     factor = density * mass_ratio * headspace_volume / chamber_base_area
     flux_si = factor * F0 * deln / delt
+    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
-    # standard deviation in SI units [kg m-2 s-1]
-    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0 ** 2)
+    # Redimensionalize fitted curve
+    ambient_mixing_ratio = nbeg + deln * c0
+    mixing_ratio_fit = nbeg + deln * _fit_func(tau, *popt)
 
-    # Coefficient of determination R2
-    residuals = phi - func(tau, *popt)
+    # Statistics
+    residuals = phi - _fit_func(tau, *popt)
     ss_res = np.sum(residuals**2)
-    ss_tot = np.sum((phi - np.mean(phi)) ** 2)
+    ss_tot = np.sum((phi - np.mean(phi))**2)
     r_squared = 1 - (ss_res / ss_tot)
 
-    # Durbin Watson test of autocorrelation of the residuals
     diffs = np.diff(residuals, n=1, axis=0)
     durbin_watson = np.sum(diffs**2) / ss_res
 
-    # Shapiro-Wilk test of the normality of the residuals
-    stats = shapiro(residuals)
-    shapiro_wilk_w = stats[0]
-    shapiro_wilk_p = stats[1]
+    sw_stat = shapiro(residuals)
+    shapiro_wilk_w, shapiro_wilk_p = sw_stat.statistic, sw_stat.pvalue
 
-    # Dimensional analysis, Buckingham pi terms
-    first_order_pi = L / F0 
-    N = (L**2 - Dsqr**2) / F0
-    second_order_pi = N / F0
+    # Buckingham Pi terms
+    first_order_pi = L / F0
+    second_order_pi = (L**2 - Dsqr**2) / F0**2
 
-    # determine flux and its standard deviation in desired output units
+    # Convert to output units
     if out_units == "kg m-2 s-1":
-        flux_out_units = flux_si
-        stddev_out_units = stddev_si
-
-    if out_units == "mg m-2 h-1":
-        flux_out_units = flux_si * 1e6 * 3600
-        stddev_out_units = stddev_si * 1e6 * 3600
+        flux, std_dev = flux_si, stddev_si
+    elif out_units == "mg m-2 h-1":
+        flux = flux_si * 1e6 * 3600
+        std_dev = stddev_si * 1e6 * 3600
+    else:
+        raise ValueError(f"Unknown out_units: {out_units}")
 
     return {
-        "flux": flux_out_units,
-        "std_dev": stddev_out_units,
+        "flux": flux,
+        "std_dev": std_dev,
         "ambient_mixing_ratio": ambient_mixing_ratio,
         "r_squared": r_squared,
         "durbin_watson": durbin_watson,
