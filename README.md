@@ -1,4 +1,4 @@
-# NOC - Non-Steady-State Open Chamber Extended
+# NOCX - Non-Steady-State Open Chamber Extended
 
 Python library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber Extended method. To be used in python or R.
 
