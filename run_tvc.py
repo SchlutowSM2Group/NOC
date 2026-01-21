@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import noc
+#import noc as noc
+import nocx as noc
 
 plt.rcParams["text.usetex"] = True
 
@@ -10,15 +11,15 @@ headspace_volume = 0.017207387  # [m3] chamber volume for /Portable/TVC2023_2023
 chamber_base_area = 0.047143525  # [m2] chamber base area
 
 flist = (
-    #"./fixed/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
-    #"./fixed/TVC2024_2024_6_29_10_52_3_5_2.csv",
-    #"./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
-    #"./fixed/TVC2024_2024_6_29_15_04_2_5_7.csv",
-    #"./Portable/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
+    "./fixed/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
+    "./fixed/TVC2024_2024_6_29_10_52_3_5_2.csv",
+    "./fixed/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
+    "./fixed/TVC2024_2024_6_29_15_04_2_5_7.csv",
+    "./Portable/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
     "./Portable/TVC2023_2023_7_11_09_45_5_2_1.csv",  # best
-    #"./Portable/TVC2023_2023_7_11_10_18_5_2_2.csv",
-    #"./Portable/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
-    #"./Portable/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
+    "./Portable/TVC2023_2023_7_11_10_18_5_2_2.csv",
+    "./Portable/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
+    "./Portable/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
 )
 
 for f in flist:
@@ -51,14 +52,28 @@ for f in flist:
     )
 
 
+    print('Flux calculation')
+    print('----------------')
     print("flux          = %.8f mg m-2 h-1"% results['flux'])
     print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
-    print("R squared     = %.4f "% results['r_squared'])
     print()
 
-    ambient_mixing_ratio = results['ambient_mixing_ratio']*1e9
+    print('Statistics')
+    print('----------')
+    print("R squared      = %.4f "% results['r_squared'])
+    print("durbin watson  = %.2f "% results['durbin_watson'])
+    print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
+    print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
+    print()
+
+    ambient_mixing_ratio = results['ambient_mixing_ratio'] * 1e9
     print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
-    print('dilution exchange rate = %.6f s-1'% results['dilution_rate'])
+    print()
+
+    print('Dimensional analysis, Buckingham Pi Terms')
+    print('-----------------------------------------')
+    print('first-order pi  = %.3f'% results['first_order_pi'])
+    print('second-order pi = %.3f'% results['second_order_pi'])
     print()
 
     # plotting
