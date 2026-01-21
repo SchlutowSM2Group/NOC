@@ -1,5 +1,5 @@
 """
-NOC - Non-Steady-State Open Chamber
+NOCX - Non-Steady-State Open Chamber Extended
 
 Soil greenhouse gas flux calculation using the Non-Steady-State Open Flux Chamber method.
 """
