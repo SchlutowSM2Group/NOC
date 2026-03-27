@@ -1,6 +1,6 @@
-# NOCX - Non-Steady-State Open Chamber Extended
+# NOC - Non-Steady-State Open Chamber
 
-Library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber Extended method. Can be used in Python or R.
+Library for calculating soil greenhouse gas flux using the Non-Steady-State Open Flux Chamber method. Can be used in Python or R.
 
 ## Installation
 
@@ -21,9 +21,9 @@ install.packages("reticulate")
 ### Python
 
 ```python
-import nocx
+import noc
 
-results = nocx.calc_flux(
+results = noc.calc_flux(
     time,                    # timestamps [s]
     mixing_ratio,            # mole mixing ratio [mol mol-1]
     chamber_base_area,       # [m2]
@@ -39,7 +39,7 @@ results = nocx.calc_flux(
 
 ```r
 library(reticulate)
-source_python('nocx.py')
+source_python('noc.py')
 
 results <- calc_flux(
     time,                    # timestamps [s]

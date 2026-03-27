@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-import nocx
+import noc
 
 plt.rcParams["text.usetex"] = True
 
@@ -38,7 +38,7 @@ for f in flist:
     air_pressure = df.AirPres.to_numpy()
 
     # call flux calculator
-    results = nocx.calc_flux(
+    results = noc.calc_flux(
         time,
         mixing_ratio,
         chamber_base_area,

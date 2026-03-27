@@ -1,6 +1,6 @@
 library(reticulate)
 
-source_python('nocx.py')
+source_python('noc.py')
 
 out_units="mg m-2 h-1"
 

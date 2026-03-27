@@ -1,5 +1,5 @@
 """
-NOCX - Non-Steady-State Open Chamber Extended
+NOC - Non-Steady-State Open Chamber Extended
 
 Soil greenhouse gas flux calculation using the Non-Steady-State Open Flux Chamber method.
 """
@@ -12,6 +12,7 @@ from scipy.stats import shapiro
 # Molecular masses [g mol-1]
 MOLECULAR_MASS = {
     "air": 28.96,
+    "H2O": 18.02,
     "CH4": 16.04,
     "CO2": 44.009,
     "N2O": 44.013,
@@ -100,6 +101,7 @@ def calc_flux(
 
     molecular_mass_gas = MOLECULAR_MASS[gas]
     molecular_mass_air = MOLECULAR_MASS["air"]
+    molecular_mass_h2o = MOLECULAR_MASS["H2O"]
 
     # Water dilution correction (Perez-Priego et al., Plant Soil 2015)
     mixing_ratio_corr = mixing_ratio / (1.0 - water_mixing_ratio)
