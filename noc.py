@@ -11,15 +11,16 @@ from scipy.stats import shapiro
 
 # Molecular masses [g mol-1]
 MOLECULAR_MASS = {
-    "air": 28.96,
+    "AIR": 28.96,
     "H2O": 18.02,
     "CH4": 16.04,
     "CO2": 44.009,
     "N2O": 44.013,
 }
 
-# Specific gas constant of dry air [J kg-1 K-1]
+# Specific gas constants [J kg-1 K-1]
 GAS_CONSTANT_AIR = 287.052874247
+GAS_CONSTANT_H2O = 462.0
 
 
 def _coth(x):
@@ -32,17 +33,55 @@ def _fit_func(t, t0, p0, p1, p2, p3):
     return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * _coth(p3 * (t - t0))))
 
 
+def convert_inputs(gas_concentration, water_concentration, gas, in_units):
+
+    if in_units == "mol mol-1 dry air":
+
+        water_mixing_ratio_dry = MOLECULAR_MASS["H2O"] / MOLECULAR_MASS["AIR"] * water_concentration
+        mass_mixing_ratio_dry =  MOLECULAR_MASS[gas] / MOLECULAR_MASS["AIR"] * gas_concentration
+
+        water_mixing_ratio = water_mixing_ratio_dry / (1.0 + water_mixing_ratio_dry)
+        mass_mixing_ratio = mass_mixing_ratio_dry / (1.0 + water_mixing_ratio_dry)
+
+    elif in_units == "mol mol-1 wet air":
+
+        MOLECULAR_MASS_WETAIR = (1.0 - water_concentration) * MOLECULAR_MASS["AIR"] + water_concentration * MOLECULAR_MASS["H2O"]
+
+        water_mixing_ratio = MOLECULAR_MASS["H2O"] / MOLECULAR_MASS_WETAIR * water_concentration 
+        mass_mixing_ratio = MOLECULAR_MASS[gas] / MOLECULAR_MASS_WETAIR * gas_concentration 
+
+    else:
+        raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
+
+    return mass_mixing_ratio, water_mixing_ratio # [kg kg-1]
+
+
+def nondimensionalize(time, mass_mixing_ratio):
+
+    return tau, phi, cbeg, cdel
+
+
+#def redimensionalize(tau, phi, tbeg, tdel, cbeg, cdel):
+def redimensionalize(phi, cbeg, cdel):
+    
+    mass_mixing_ratio = cbeg + cdel * phi
+    #time = tbeg + tdel * tau
+
+    #return time, conc
+    return mass_mixing_ratio
+
+
 def calc_flux(
     time,
-    mixing_ratio,
+    gas_concentration,
     chamber_base_area,
     headspace_volume,
     gas="CO2",
     air_temperature=20.0,
     air_pressure=1010.0,
-    in_units="mol mol-1",
+    in_units="mol mol-1 dry air",
     out_units="kg m-2 s-1",
-    water_mixing_ratio=0.0,
+    water_concentration=0.0,
 ):
     """
     Compute soil flux using the Non-Steady-State Open Flux Chamber method.
@@ -51,8 +90,8 @@ def calc_flux(
     ----------
     time : array_like
         Timestamps [s].
-    mixing_ratio : array_like
-        Mole mixing ratio [mol mol-1].
+    gas_mole_fraction : array_like
+        Mole fraction of the gas of interest [mol mol-1].
     chamber_base_area : float
         Chamber base area [m2].
     headspace_volume : float
@@ -99,21 +138,18 @@ def calc_flux(
     if gas not in MOLECULAR_MASS:
         raise ValueError(f"Unknown gas: {gas}. Choose from: CH4, CO2, N2O")
 
-    molecular_mass_gas = MOLECULAR_MASS[gas]
-    molecular_mass_air = MOLECULAR_MASS["air"]
-    molecular_mass_h2o = MOLECULAR_MASS["H2O"]
+    
+    mass_mixing_ratio, water_mixing_ratio = convert_inputs(gas_concentration, water_concentration, gas, in_units)
 
-    # Water dilution correction (Perez-Priego et al., Plant Soil 2015)
-    mixing_ratio_corr = mixing_ratio / (1.0 - water_mixing_ratio)
-
-    # Scale time and mixing ratio to [0, 1]
+    # Non-dimensionalize
     tbeg, tend = min(time), max(time)
-    delt = tend - tbeg
-    nbeg, nend = mixing_ratio[0], mixing_ratio[-1]
-    deln = nend - nbeg
+    tdel = tend - tbeg
+    cbeg, cend = mass_mixing_ratio[0], mass_mixing_ratio[-1]
+    cdel = cend - cbeg
 
-    phi = (mixing_ratio - nbeg) / deln  # scaled mixing ratio
-    tau = (time - tbeg) / delt  # scaled time
+    phi = (mass_mixing_ratio - cbeg) / cdel  # scaled mixing ratio
+    tau = (time - tbeg) / tdel  # scaled time
+
 
     # Fit model
     try:
@@ -130,21 +166,22 @@ def calc_flux(
         return None
 
     t0, c0, F0, L, Dsqr = popt
-    mass_ratio = molecular_mass_gas / molecular_mass_air
 
     # Convert to SI units
     pressure_si = np.mean(air_pressure) * 100.0  # hPa -> Pa
     temperature_si = np.mean(air_temperature) + 273.15  # deg C -> K
-    density = pressure_si / temperature_si / GAS_CONSTANT_AIR
+    GAS_CONSTANT = (1.0 - np.mean(water_mixing_ratio)) * GAS_CONSTANT_AIR + GAS_CONSTANT_H2O * np.mean(water_mixing_ratio)
+    density = pressure_si / temperature_si / GAS_CONSTANT
 
     # Compute flux [kg m-2 s-1]
-    factor = density * mass_ratio * headspace_volume / chamber_base_area
-    flux_si = factor * F0 * deln / delt
-    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
+    factor = density * headspace_volume / chamber_base_area
+    flux_nondim = factor * F0 
 
-    # Redimensionalize fitted curve
-    ambient_mixing_ratio = nbeg + deln * c0
-    mixing_ratio_fit = nbeg + deln * _fit_func(tau, *popt)
+    # Redimensionalize 
+    ambient_mass_mixing_ratio = cbeg + cdel * c0
+    mass_mixing_ratio_fit = cbeg + cdel * _fit_func(tau, *popt)
+    flux_si = flux_nondim * cdel / tdel
+    stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
     # Statistics
     residuals = phi - _fit_func(tau, *popt)
@@ -174,12 +211,13 @@ def calc_flux(
     return {
         "flux": flux,
         "std_dev": std_dev,
-        "ambient_mixing_ratio": ambient_mixing_ratio,
+        "ambient_mass_mixing_ratio": ambient_mass_mixing_ratio,
         "r_squared": r_squared,
         "durbin_watson": durbin_watson,
         "shapiro_wilk_w": shapiro_wilk_w,
         "shapiro_wilk_p": shapiro_wilk_p,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
-        "mixing_ratio_fit": mixing_ratio_fit,
+        "mass_mixing_ratio": mass_mixing_ratio,
+        "mass_mixing_ratio_fit": mass_mixing_ratio_fit,
     }
