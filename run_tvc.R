@@ -1,4 +1,5 @@
 library(reticulate)
+library(ggplot2)
 
 source_python('noc.py')
 
@@ -35,7 +36,7 @@ results <- calc_flux(
             mixing_ratio,
             chamber_base_area,
             headspace_volume,
-	    water_mixing_ratio=water_mixing_ratio,
+	    water_concentration=water_mixing_ratio,
 	    air_temperature=air_temperature,
 	    air_pressure=air_pressure,
             gas="CH4",
@@ -54,10 +55,30 @@ sprintf("R squared            = %f",results$r_squared)
 sprintf("durbin watson        = %f",results$durbin_watson)
 sprintf("shapiro wilk w       = %f",results$shapiro_wilk_w)
 sprintf("shapiro wilk p       = %f",results$shapiro_wilk_p)
-sprintf("ambient mixing ratio = %f ppb",results$ambient_mixing_ratio * 1e9)
+sprintf("ambient mixing ratio = %f ppb",results$ambient_gas_concentration * 1e9)
 sprintf("---------------------------------------------")
 sprintf("    Dimensional analysis, Buckingham Pi Terms")
 sprintf("---------------------------------------------")
 sprintf("first-order pi term  = %f",results$first_order_pi)
 sprintf("second-order pi term = %f",results$second_order_pi)
+
+# plotting
+plot_df <- data.frame(
+  time = as.vector(time),
+  measured = as.vector(mixing_ratio) * 1e9,
+  fitted = as.vector(results$gas_concentration_fit) * 1e9
+)
+
+p <- ggplot(plot_df, aes(x = time)) +
+  geom_point(aes(y = measured)) +
+  #geom_line(aes(y = fitted), color = "green", linetype = "dashed") +
+  geom_line(aes(y = fitted), color = "green") +
+  labs(
+    title = sprintf("%s\nFlux = %.6f \u00b1 %.6f mg CH4 m-2 h-1", flnm, results$flux, results$std_dev),
+    x = "time [s]",
+    y = "CH4 mole fraction [ppb]"
+  )
+
+ggsave(paste0(flnm, ".png"), plot = p)
+print(p)
 

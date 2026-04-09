@@ -10,15 +10,15 @@ headspace_volume = 0.017207387  # [m3] chamber volume for /Portable/TVC2023_2023
 chamber_base_area = 0.047143525  # [m2] chamber base area
 
 flist = (
-    #"./data/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
-    #"./data/TVC2024_2024_6_29_10_52_3_5_2.csv",
-    #"./data/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
-    #"./data/TVC2024_2024_6_29_15_04_2_5_7.csv",
-    #"./data/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
+    "./data/TVC2022__2022_07_25_18_37_16_2_4.csv",  # good counter example where it wont work
+    "./data/TVC2024_2024_6_29_10_52_3_5_2.csv",
+    "./data/TVC2024_2024_6_29_14_58_28_5_7.csv",  # really bad data
+    "./data/TVC2024_2024_6_29_15_04_2_5_7.csv",
+    "./data/TVC2023_2023_7_11_09_35_16_2_1.csv",  # bad data
     "./data/TVC2023_2023_7_11_09_45_5_2_1.csv",  # best
-    #"./data/TVC2023_2023_7_11_10_18_5_2_2.csv",
-    #"./data/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
-    #"./data/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
+    "./data/TVC2023_2023_7_11_10_18_5_2_2.csv",
+    "./data/TVC2024_2024_6_27_10_34_9_L1_1.csv",  # bad data
+    "./data/TVC2024_2024_6_27_12_13_7_L2_1.csv",  # negative flux
 )
 
 for f in flist:
@@ -29,9 +29,9 @@ for f in flist:
     time = df.Minute_7810 * 60.0 + df.Second_7810
 
     # read mole mixing ratio of CH4 [ppb mol mol-1] from dataframe
-    gas_concentration = df.CH4_7810.to_numpy() * 1e-9
+    gas_mole_fraction = df.CH4_7810.to_numpy() * 1e-9
     # H2O mixing ratio in ppm
-    water_concentration = df.H2O_7810.to_numpy() * 1e-6
+    water_mole_fraction = df.H2O_7810.to_numpy() * 1e-6
     # Air temperature in deg C
     air_temperature = df.AirTemp.to_numpy() 
     # Air pressure in hPa
@@ -40,10 +40,10 @@ for f in flist:
     # call flux calculator
     results = noc.calc_flux(
         time,
-        gas_concentration,
+        gas_mole_fraction,
         chamber_base_area,
         headspace_volume,
-        water_concentration=water_concentration,
+        water_concentration=water_mole_fraction,
         air_temperature=air_temperature,
         air_pressure=air_pressure,
         gas="CH4",
@@ -65,8 +65,8 @@ for f in flist:
     print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
     print()
 
-    ambient_mixing_ratio = results['ambient_mass_mixing_ratio'] * 1e9
-    print('ambient mixing ratio   = %.0f ppb'% ambient_mixing_ratio)
+    ambient_gas_concentration = results['ambient_gas_concentration'] * 1e9
+    print('ambient mole fraction = %.0f ppb'% ambient_gas_concentration)
     print()
 
     print('Dimensional analysis, Buckingham Pi Terms')
@@ -76,10 +76,10 @@ for f in flist:
     print()
 
     # plotting
-    plt.plot(time, results['mass_mixing_ratio_fit'], "g--")
-    plt.plot(time, results['mass_mixing_ratio'],'.')
+    plt.plot(time, results['gas_concentration_fit'] * 1e9, "g--")
+    plt.plot(time, gas_mole_fraction * 1e9,'.')
     plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(results['flux'], results['std_dev']))
     plt.xlabel("time [s]")
-    plt.ylabel("CH4 mass mixing ratio [kg/kg]")
+    plt.ylabel("CH4 mole fraction [ppb]")
     plt.savefig(f + ".png")
     plt.show()
