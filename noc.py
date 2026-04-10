@@ -192,13 +192,15 @@ def calc_flux(
     t0, c0, F0, L, Dsqr = popt
 
     # Convert to SI units
-    pressure_si = np.mean(air_pressure) * 100.0  # hPa -> Pa
-    temperature_si = np.mean(air_temperature) + 273.15  # deg C -> K
+    pressure_si = air_pressure * 100.0  # hPa -> Pa
+    temperature_si = air_temperature + 273.15  # deg C -> K
     gas_constant = (
-            (1.0 - np.mean(water_mass_fraction)) * GAS_CONSTANT_AIR
-            + np.mean(water_mass_fraction) * GAS_CONSTANT_H2O
+            (1.0 - water_mass_fraction) * GAS_CONSTANT_AIR
+            + water_mass_fraction * GAS_CONSTANT_H2O
             )
-    density = pressure_si / temperature_si / gas_constant
+    density = np.mean(
+            pressure_si / temperature_si / gas_constant
+            )
  
     # Compute flux
     factor = density * headspace_volume / chamber_base_area
