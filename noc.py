@@ -25,7 +25,8 @@ GAS_CONSTANT_H2O = 462.0
 
 def _coth(x):
     """Hyperbolic cotangent."""
-    return np.cosh(x) / np.sinh(x)
+    # return np.cosh(x) / np.sinh(x)
+    return 1.0 / np.tanh(x)
 
 
 def _fit_func(t, t0, p0, p1, p2, p3):
@@ -108,7 +109,7 @@ def _convert_outputs(gas_mass_fraction, water_concentration, gas, in_units, wet=
     else:
         raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
 
-    return gas_concentration
+    return gas_concentration # in SI units
 
 
 def calc_flux(
@@ -193,12 +194,20 @@ def calc_flux(
 
     total_air_density, dry_air_density = _density(air_pressure, air_temperature, water_mass_fraction)
 
-    density = np.mean(dry_air_density)
+    # density = total_air_density
+    density = dry_air_density
+    # density = np.mean(dry_air_density)
+    # density = np.mean(total_air_density)
 
     # Non-dimensionalize
-    c = gas_dry_mass_fraction
     tbeg, tend = min(time), max(time)
     tdel = tend - tbeg
+
+    # c = gas_dry_mass_fraction
+    # c = gas_wet_mass_fraction
+    # c = density * gas_wet_mass_fraction
+    c = density * gas_dry_mass_fraction
+
     cbeg, cend = c[0], c[-1]
     cdel = cend - cbeg
 
@@ -215,21 +224,23 @@ def calc_flux(
             p0=(0.1, 0.5, 1.0, 1.0, 1.0),
             check_finite=True,
             nan_policy="omit",
+            method="lm"
         )
     except RuntimeError as e:
-        print(f"Warning: curve_fit failed to converge: {e}")
-        return None
+         print(f"Warning: curve_fit failed to converge: {e}")
+         return None
 
     # Estimators
     t0, c0, F0, L, Dsqr = popt
   
-    # Compute nondimensional flux from estimator
-    flux_nondim = density * headspace_volume / chamber_base_area * F0
-
     # Redimensionalize to SI units
-    flux_si = flux_nondim * cdel / tdel
-    ambient_mass_fraction = cbeg + cdel * c0
-    gas_mass_fraction_fit = cbeg + cdel * _fit_func(tau, *popt)
+    # factor = density * headspace_volume / chamber_base_area  * cdel / tdel
+    factor = headspace_volume / chamber_base_area  * cdel / tdel
+    flux_si = factor * F0
+    # ambient_mass_fraction = cbeg + cdel * c0
+    # gas_mass_fraction_fit = cbeg + cdel * _fit_func(tau, *popt)
+    ambient_mass_fraction = (cbeg + cdel * c0) / np.mean(density)
+    gas_mass_fraction_fit = (cbeg + cdel * _fit_func(tau, *popt)) / density
     stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
     # Statistics
@@ -275,5 +286,8 @@ def calc_flux(
         "second_order_pi": second_order_pi,
         "ambient_mass_fraction": ambient_mass_fraction,
         "ambient_gas_concentration": ambient_gas_concentration,
+        "gas_mass_fraction_fit": gas_mass_fraction_fit,
         "gas_concentration_fit": gas_concentration_fit,
+        "density": density,
+        "c": c
     }

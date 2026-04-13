@@ -51,35 +51,46 @@ for f in flist:
     )
 
 
-    print('Flux calculation')
-    print('----------------')
-    print("flux          = %.8f mg m-2 h-1"% results['flux'])
-    print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
-    print()
+    if results is not None:
+        print('Flux calculation')
+        print('----------------')
+        print("flux          = %.8f mg m-2 h-1"% results['flux'])
+        print("std deviation = %.8f mg m-2 h-1"% results['std_dev'])
+        print()
+    
+        print('Statistics')
+        print('----------')
+        print("R squared      = %.4f "% results['r_squared'])
+        print("durbin watson  = %.2f "% results['durbin_watson'])
+        print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
+        print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
+        print()
+    
+        ambient_gas_concentration = results['ambient_gas_concentration'] * 1e9
+        print('ambient mole fraction = %.0f ppb'% ambient_gas_concentration)
+        print()
+    
+        print('Dimensional analysis, Buckingham Pi Terms')
+        print('-----------------------------------------')
+        print('first-order pi  = %.3f'% results['first_order_pi'])
+        print('second-order pi = %.3f'% results['second_order_pi'])
+        print()
+    
+        # plotting
+        plt.plot(time, results['gas_concentration_fit'] * 1e9, "g--")
+        plt.plot(time, gas_mole_fraction * 1e9,'.')
+        plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(results['flux'], results['std_dev']))
+        plt.xlabel("time [s]")
+        plt.ylabel("CH4 mole fraction [ppb]")
+        plt.savefig(f + ".png")
+        plt.show()
 
-    print('Statistics')
-    print('----------')
-    print("R squared      = %.4f "% results['r_squared'])
-    print("durbin watson  = %.2f "% results['durbin_watson'])
-    print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
-    print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
-    print()
+        plt.plot(time, results['c'], '-')
+        plt.xlabel("time [s]")
+        plt.ylabel("c")
+        plt.show()
 
-    ambient_gas_concentration = results['ambient_gas_concentration'] * 1e9
-    print('ambient mole fraction = %.0f ppb'% ambient_gas_concentration)
-    print()
-
-    print('Dimensional analysis, Buckingham Pi Terms')
-    print('-----------------------------------------')
-    print('first-order pi  = %.3f'% results['first_order_pi'])
-    print('second-order pi = %.3f'% results['second_order_pi'])
-    print()
-
-    # plotting
-    plt.plot(time, results['gas_concentration_fit'] * 1e9, "g--")
-    plt.plot(time, gas_mole_fraction * 1e9,'.')
-    plt.title(f + "\n Flux = %.6f $\\pm$ %.6f mg CH4 m-2 h-1" %(results['flux'], results['std_dev']))
-    plt.xlabel("time [s]")
-    plt.ylabel("CH4 mole fraction [ppb]")
-    plt.savefig(f + ".png")
-    plt.show()
+        plt.plot(time, results['density'], '.')
+        plt.xlabel("time [s]")
+        plt.ylabel("air density [kg m-3]")
+        plt.show()
