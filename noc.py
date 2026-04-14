@@ -194,8 +194,8 @@ def calc_flux(
 
     total_air_density, dry_air_density = _density(air_pressure, air_temperature, water_mass_fraction)
 
-    # density = total_air_density
-    density = dry_air_density
+    density = total_air_density
+    # density = dry_air_density
     # density = np.mean(dry_air_density)
     # density = np.mean(total_air_density)
 
@@ -205,8 +205,8 @@ def calc_flux(
 
     # c = gas_dry_mass_fraction
     # c = gas_wet_mass_fraction
-    # c = density * gas_wet_mass_fraction
-    c = density * gas_dry_mass_fraction
+    c = density * gas_wet_mass_fraction # gas mass concentration
+    # c = density * gas_dry_mass_fraction
 
     cbeg, cend = c[0], c[-1]
     cdel = cend - cbeg
@@ -240,7 +240,8 @@ def calc_flux(
     # ambient_mass_fraction = cbeg + cdel * c0
     # gas_mass_fraction_fit = cbeg + cdel * _fit_func(tau, *popt)
     ambient_mass_fraction = (cbeg + cdel * c0) / np.mean(density)
-    gas_mass_fraction_fit = (cbeg + cdel * _fit_func(tau, *popt)) / density
+    gas_mass_concentration_fit = (cbeg + cdel * _fit_func(tau, *popt))
+    gas_mass_fraction_fit = gas_mass_concentration_fit / density
     stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
     # Statistics
@@ -261,10 +262,10 @@ def calc_flux(
 
     # Convert back to input units for concentrations
     ambient_gas_concentration = _convert_outputs(
-            ambient_mass_fraction, np.mean(water_concentration), gas, in_units, wet=False)
+            ambient_mass_fraction, np.mean(water_concentration), gas, in_units, wet=True)
 
     gas_concentration_fit = _convert_outputs(
-            gas_mass_fraction_fit, water_concentration, gas, in_units, wet=False)
+            gas_mass_fraction_fit, water_concentration, gas, in_units, wet=True)
 
     # Convert to output units
     if out_units == "kg m-2 s-1":
@@ -288,6 +289,7 @@ def calc_flux(
         "ambient_gas_concentration": ambient_gas_concentration,
         "gas_mass_fraction_fit": gas_mass_fraction_fit,
         "gas_concentration_fit": gas_concentration_fit,
-        "density": density,
-        "c": c
+        "gas_mass_concentration": c,
+        "gas_mass_concentration_fit": gas_mass_concentration_fit,
+        "total_density": density,
     }

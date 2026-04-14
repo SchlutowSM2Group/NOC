@@ -85,12 +85,13 @@ for f in flist:
         plt.savefig(f + ".png")
         plt.show()
 
-        plt.plot(time, results['c'], '-')
+        plt.plot(time, results['gas_mass_concentration'], '.')
+        plt.plot(time, results['gas_mass_concentration_fit'], '-')
         plt.xlabel("time [s]")
-        plt.ylabel("c")
+        plt.ylabel("gas mass concetration [kg m-3]")
         plt.show()
 
-        plt.plot(time, results['density'], '.')
+        plt.plot(time, results['total_density'], '.')
         plt.xlabel("time [s]")
-        plt.ylabel("air density [kg m-3]")
+        plt.ylabel("total air density [kg m-3]")
         plt.show()
