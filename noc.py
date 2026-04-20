@@ -8,110 +8,6 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.stats import shapiro
 
-
-# Molecular masses [g mol-1]
-MOLECULAR_MASS = {
-    "AIR": 28.96,
-    "H2O": 18.02,
-    "CH4": 16.04,
-    "CO2": 44.009,
-    "N2O": 44.013,
-}
-
-# Specific gas constants [J kg-1 K-1]
-GAS_CONSTANT_AIR = 287.05
-GAS_CONSTANT_H2O = 462.0
-
-
-def _coth(x):
-    """Hyperbolic cotangent."""
-    # return np.cosh(x) / np.sinh(x)
-    return 1.0 / np.tanh(x)
-
-
-def _fit_func(t, t0, p0, p1, p2, p3):
-    """Fitting function for the NOC model."""
-    return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * _coth(p3 * (t - t0))))
-
-def _density(air_pressure, air_temperature, water_mass_fraction):
-
-    # Convert to SI units
-    pressure_si = air_pressure * 100.0  # hPa -> Pa
-    temperature_si = air_temperature + 273.15  # deg C -> K
-    gas_constant = (
-            (1.0 - water_mass_fraction) * GAS_CONSTANT_AIR
-            + water_mass_fraction * GAS_CONSTANT_H2O
-            )
-    total_air_density = pressure_si / temperature_si / gas_constant
-
-    dry_air_density = total_air_density * (1.0 - water_mass_fraction)
-
-    return total_air_density, dry_air_density
-
-
-def _convert_inputs(gas_concentration, water_concentration, gas, in_units):
-
-    if in_units == "mol mol-1 dry air":
-
-        water_mole_fraction = water_concentration
-        gas_dry_mole_fraction = gas_concentration
-        gas_wet_mole_fraction = gas_dry_mole_fraction * (1.0 - water_mole_fraction)
-
-    elif in_units == "mol mol-1 wet air":
-        
-        water_mole_fraction = water_concentration
-        gas_wet_mole_fraction = gas_concentration
-        gas_dry_mole_fraction = gas_wet_mole_fraction / (1.0 - water_mole_fraction)
-
-    else:
-        raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
-
-    molecular_mass_wet_air = (
-            (1.0 - water_mole_fraction) * MOLECULAR_MASS['AIR']
-            + water_mole_fraction * MOLECULAR_MASS['H2O']
-            )
-
-    water_mass_fraction = MOLECULAR_MASS['H2O'] / molecular_mass_wet_air * water_mole_fraction
-    gas_dry_mass_fraction = MOLECULAR_MASS[gas] /  MOLECULAR_MASS['AIR'] * gas_dry_mole_fraction
-    gas_wet_mass_fraction = MOLECULAR_MASS[gas] / molecular_mass_wet_air * gas_wet_mole_fraction
-
-    return gas_dry_mass_fraction, gas_wet_mass_fraction, water_mass_fraction # [kg kg-1]
-
-
-def _convert_outputs(gas_mass_fraction, water_concentration, gas, in_units, wet=True):
-
-    water_mole_fraction = water_concentration
-    
-    molecular_mass_wet_air = (
-            (1.0 - water_mole_fraction) * MOLECULAR_MASS['AIR']
-            + water_mole_fraction * MOLECULAR_MASS['H2O']
-            )
-
-    if wet:
-        gas_wet_mass_fraction = gas_mass_fraction
-        gas_wet_mole_fraction = gas_wet_mass_fraction * molecular_mass_wet_air / MOLECULAR_MASS[gas] 
-    else:
-        gas_dry_mass_fraction = gas_mass_fraction
-        gas_dry_mole_fraction = gas_dry_mass_fraction * MOLECULAR_MASS["AIR"] / MOLECULAR_MASS[gas] 
-
-    if in_units == "mol mol-1 dry air":
-        if wet:
-            gas_concentration = gas_wet_mole_fraction / (1.0 - water_mole_fraction)
-        else:
-            gas_concentration = gas_dry_mole_fraction
-
-    elif in_units == "mol mol-1 wet air":
-        if wet:
-            gas_concentration = gas_wet_mole_fraction
-        else:
-            gas_concentration = gas_dry_mole_fraction * (1.0 - water_mole_fraction)
-
-    else:
-        raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
-
-    return gas_concentration # in SI units
-
-
 def calc_flux(
     time,
     gas_concentration,
@@ -183,6 +79,115 @@ def calc_flux(
             Fitted gas concentration curve in `in_units`.
     """
 
+    # Molecular masses [g mol-1]
+    MOLECULAR_MASS = {
+        "AIR": 28.96,
+        "H2O": 18.02,
+        "CH4": 16.04,
+        "CO2": 44.009,
+        "N2O": 44.013,
+    }
+    
+    # Specific gas constants [J kg-1 K-1]
+    GAS_CONSTANT_AIR = 287.05
+    GAS_CONSTANT_H2O = 462.0
+    
+    
+    ###################################################################
+    ###               Auxiliary Functions                           ###
+    ###################################################################
+    def _coth(x):
+        """Hyperbolic cotangent."""
+        # return np.cosh(x) / np.sinh(x)
+        return 1.0 / np.tanh(x)
+    
+    
+    def _fit_func(t, t0, p0, p1, p2, p3):
+        """Fitting function for the NOC model."""
+        return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * _coth(p3 * (t - t0))))
+    
+    def _density(air_pressure, air_temperature, water_mass_fraction):
+    
+        # Convert to SI units
+        pressure_si = air_pressure * 100.0  # hPa -> Pa
+        temperature_si = air_temperature + 273.15  # deg C -> K
+        gas_constant = (
+                (1.0 - water_mass_fraction) * GAS_CONSTANT_AIR
+                + water_mass_fraction * GAS_CONSTANT_H2O
+                )
+        total_air_density = pressure_si / temperature_si / gas_constant
+    
+        dry_air_density = total_air_density * (1.0 - water_mass_fraction)
+    
+        return total_air_density, dry_air_density
+    
+    
+    def _convert_inputs(gas_concentration, water_concentration, gas, in_units):
+    
+        if in_units == "mol mol-1 dry air":
+    
+            water_mole_fraction = water_concentration
+            gas_dry_mole_fraction = gas_concentration
+            gas_wet_mole_fraction = gas_dry_mole_fraction * (1.0 - water_mole_fraction)
+    
+        elif in_units == "mol mol-1 wet air":
+            
+            water_mole_fraction = water_concentration
+            gas_wet_mole_fraction = gas_concentration
+            gas_dry_mole_fraction = gas_wet_mole_fraction / (1.0 - water_mole_fraction)
+    
+        else:
+            raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
+    
+        molecular_mass_wet_air = (
+                (1.0 - water_mole_fraction) * MOLECULAR_MASS['AIR']
+                + water_mole_fraction * MOLECULAR_MASS['H2O']
+                )
+    
+        water_mass_fraction = MOLECULAR_MASS['H2O'] / molecular_mass_wet_air * water_mole_fraction
+        gas_dry_mass_fraction = MOLECULAR_MASS[gas] /  MOLECULAR_MASS['AIR'] * gas_dry_mole_fraction
+        gas_wet_mass_fraction = MOLECULAR_MASS[gas] / molecular_mass_wet_air * gas_wet_mole_fraction
+    
+        return gas_dry_mass_fraction, gas_wet_mass_fraction, water_mass_fraction # [kg kg-1]
+    
+    
+    def _convert_outputs(gas_mass_fraction, water_concentration, gas, in_units, wet=True):
+    
+        water_mole_fraction = water_concentration
+        
+        molecular_mass_wet_air = (
+                (1.0 - water_mole_fraction) * MOLECULAR_MASS['AIR']
+                + water_mole_fraction * MOLECULAR_MASS['H2O']
+                )
+    
+        if wet:
+            gas_wet_mass_fraction = gas_mass_fraction
+            gas_wet_mole_fraction = gas_wet_mass_fraction * molecular_mass_wet_air / MOLECULAR_MASS[gas] 
+        else:
+            gas_dry_mass_fraction = gas_mass_fraction
+            gas_dry_mole_fraction = gas_dry_mass_fraction * MOLECULAR_MASS["AIR"] / MOLECULAR_MASS[gas] 
+    
+        if in_units == "mol mol-1 dry air":
+            if wet:
+                gas_concentration = gas_wet_mole_fraction / (1.0 - water_mole_fraction)
+            else:
+                gas_concentration = gas_dry_mole_fraction
+    
+        elif in_units == "mol mol-1 wet air":
+            if wet:
+                gas_concentration = gas_wet_mole_fraction
+            else:
+                gas_concentration = gas_dry_mole_fraction * (1.0 - water_mole_fraction)
+    
+        else:
+            raise ValueError(f"Unknown in_units: {in_units}. Choose from: mol mol-1 dry air, mol mol-1 wet air")
+    
+        return gas_concentration # in SI units
+
+    ###################################################################
+    ###               Converting                                    ###
+    ###################################################################
+
     # Test availability
     if gas not in MOLECULAR_MASS:
         raise ValueError(f"Unknown gas: {gas}. Choose from: CH4, CO2, N2O")
@@ -194,20 +199,23 @@ def calc_flux(
 
     total_air_density, dry_air_density = _density(air_pressure, air_temperature, water_mass_fraction)
 
-    density = total_air_density
+    # Choose model density
+    # density = total_air_density
     # density = dry_air_density
-    # density = np.mean(dry_air_density)
+    density = np.mean(dry_air_density)
     # density = np.mean(total_air_density)
 
-    # Non-dimensionalize
+    # Non-dimensionalize time
     tbeg, tend = min(time), max(time)
     tdel = tend - tbeg
 
+    # Definition of prognostic variable (gas_mass_concentration)
     # c = gas_dry_mass_fraction
     # c = gas_wet_mass_fraction
-    c = density * gas_wet_mass_fraction # gas mass concentration
-    # c = density * gas_dry_mass_fraction
+    # c = density * gas_wet_mass_fraction # gas mass concentration
+    c = density * gas_dry_mass_fraction
 
+    # Non-dimensionalize progostic variable
     cbeg, cend = c[0], c[-1]
     cdel = cend - cbeg
 
@@ -215,7 +223,9 @@ def calc_flux(
     tau = (time - tbeg) / tdel  # scaled time
 
 
-    # Fit model
+    ###################################################################
+    ###         Fit model                                           ###
+    ###################################################################
     try:
         popt, pcov = curve_fit(
             _fit_func,
@@ -233,7 +243,10 @@ def calc_flux(
     # Estimators
     t0, c0, F0, L, Dsqr = popt
   
-    # Redimensionalize to SI units
+    ###################################################################
+    ###         Redimensionalize to SI units
+    ###################################################################
+
     # factor = density * headspace_volume / chamber_base_area  * cdel / tdel
     factor = headspace_volume / chamber_base_area  * cdel / tdel
     flux_si = factor * F0
@@ -244,30 +257,46 @@ def calc_flux(
     gas_mass_fraction_fit = gas_mass_concentration_fit / density
     stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
-    # Statistics
+    ###################################################################
+    ###          Statistics
+    ###################################################################
+
     residuals = phi - _fit_func(tau, *popt)
-    ss_res = np.sum(residuals**2)
+    rss = np.sum(residuals**2)
     ss_tot = np.sum((phi - np.mean(phi))**2)
-    r_squared = 1 - (ss_res / ss_tot)
+    r_squared = 1 - (rss / ss_tot)
 
+    # Durbin Watson test for autocorrelation of the residuals
     diffs = np.diff(residuals, n=1, axis=0)
-    durbin_watson = np.sum(diffs**2) / ss_res
+    durbin_watson = np.sum(diffs**2) / rss
 
+    # Shapiro Wilk test for normality of the residuals
     sw_stat = shapiro(residuals)
     shapiro_wilk_w, shapiro_wilk_p = sw_stat.statistic, sw_stat.pvalue
+
+    # Akaike Information Criterion for least square method
+    n = len(phi)
+    p = 5 # number of estimated parameters plus
+    aic = n * np.log(rss / n) + 2 * (p + 1)
 
     # Buckingham Pi terms
     first_order_pi = L / F0
     second_order_pi = (L**2 - Dsqr**2) / F0**2
 
-    # Convert back to input units for concentrations
+    ###################################################################
+    ###       Convert back to input units for concentrations
+    ###################################################################
+
     ambient_gas_concentration = _convert_outputs(
-            ambient_mass_fraction, np.mean(water_concentration), gas, in_units, wet=True)
+            ambient_mass_fraction, np.mean(water_concentration), gas, in_units, wet=False)
 
     gas_concentration_fit = _convert_outputs(
-            gas_mass_fraction_fit, water_concentration, gas, in_units, wet=True)
+            gas_mass_fraction_fit, water_concentration, gas, in_units, wet=False)
 
-    # Convert to output units
+    ###################################################################
+    ###       Convert flux to selected output units
+    ###################################################################
+
     if out_units == "kg m-2 s-1":
         flux, std_dev = flux_si, stddev_si
     elif out_units == "mg m-2 h-1":
@@ -283,6 +312,7 @@ def calc_flux(
         "durbin_watson": durbin_watson,
         "shapiro_wilk_w": shapiro_wilk_w,
         "shapiro_wilk_p": shapiro_wilk_p,
+        "aic": aic,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
         "ambient_mass_fraction": ambient_mass_fraction,

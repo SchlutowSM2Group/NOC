@@ -64,6 +64,7 @@ for f in flist:
         print("durbin watson  = %.2f "% results['durbin_watson'])
         print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
         print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
+        print("AIC            = %.2f "% results['aic'])
         print()
     
         ambient_gas_concentration = results['ambient_gas_concentration'] * 1e9
@@ -85,13 +86,13 @@ for f in flist:
         plt.savefig(f + ".png")
         plt.show()
 
-        plt.plot(time, results['gas_mass_concentration'], '.')
-        plt.plot(time, results['gas_mass_concentration_fit'], '-')
-        plt.xlabel("time [s]")
-        plt.ylabel("gas mass concetration [kg m-3]")
-        plt.show()
-
-        plt.plot(time, results['total_density'], '.')
-        plt.xlabel("time [s]")
-        plt.ylabel("total air density [kg m-3]")
-        plt.show()
+#        plt.plot(time, results['gas_mass_concentration'], '.')
+#        plt.plot(time, results['gas_mass_concentration_fit'], '-')
+#        plt.xlabel("time [s]")
+#        plt.ylabel("gas mass concetration [kg m-3]")
+#        plt.show()
+#
+#        plt.plot(time, results['total_density'], '.')
+#        plt.xlabel("time [s]")
+#        plt.ylabel("total air density [kg m-3]")
+#        plt.show()
