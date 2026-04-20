@@ -317,9 +317,8 @@ def calc_flux(
         "second_order_pi": second_order_pi,
         "ambient_mass_fraction": ambient_mass_fraction,
         "ambient_gas_concentration": ambient_gas_concentration,
+        "gas_mass_concentration": c,
         "gas_mass_fraction_fit": gas_mass_fraction_fit,
         "gas_concentration_fit": gas_concentration_fit,
-        "gas_mass_concentration": c,
         "gas_mass_concentration_fit": gas_mass_concentration_fit,
-        "total_density": density,
     }
