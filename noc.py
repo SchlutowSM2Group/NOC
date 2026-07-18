@@ -216,10 +216,15 @@ def calc_flux(
     c = density * gas_dry_mass_fraction
 
     # Non-dimensionalize progostic variable
-    cbeg, cend = c[0], c[-1]
-    cdel = cend - cbeg
+    #cbeg, cend = c[0], c[-1]
+    cmax, cmin = max(c), min(c)
 
-    phi = (c - cbeg) / cdel  # scaled mixing ratio
+    #cdel = cend - cbeg
+    cdel = cmax - cmin
+
+
+    #phi = (c - cbeg) / cdel  # scaled mixing ratio
+    phi = (c - cmin) / cdel  # scaled mixing ratio
     tau = (time - tbeg) / tdel  # scaled time
 
 
@@ -252,8 +257,10 @@ def calc_flux(
     flux_si = factor * F0
     # ambient_mass_fraction = cbeg + cdel * c0
     # gas_mass_fraction_fit = cbeg + cdel * _fit_func(tau, *popt)
-    ambient_mass_fraction = (cbeg + cdel * c0) / np.mean(density)
-    gas_mass_concentration_fit = (cbeg + cdel * _fit_func(tau, *popt))
+    #ambient_mass_fraction = (cbeg + cdel * c0) / np.mean(density)
+    #gas_mass_concentration_fit = (cbeg + cdel * _fit_func(tau, *popt))
+    ambient_mass_fraction = (cmin + cdel * c0) / np.mean(density)
+    gas_mass_concentration_fit = (cmin + cdel * _fit_func(tau, *popt))
     gas_mass_fraction_fit = gas_mass_concentration_fit / density
     stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
 
