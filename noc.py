@@ -237,9 +237,10 @@ def calc_flux(
             tau.squeeze(),
             phi.squeeze(),
             p0=(0.1, 0.5, 1.0, 1.0, 1.0),
+            bounds=((-0.1, -np.inf, -np.inf, -np.inf, 0.0), (0.9, np.inf, np.inf, np.inf, np.inf)),
             check_finite=True,
             nan_policy="omit",
-            method="lm"
+            method="trf"
         )
     except RuntimeError as e:
          print(f"Warning: curve_fit failed to converge: {e}")
@@ -263,6 +264,9 @@ def calc_flux(
     gas_mass_concentration_fit = (cmin + cdel * _fit_func(tau, *popt))
     gas_mass_fraction_fit = gas_mass_concentration_fit / density
     stddev_si = np.abs(flux_si) * np.sqrt(pcov[2, 2] / F0**2)
+    transience_time = 1.0 / Dsqr * tdel
+    if transience_time > 10 * tdel:
+        transience_time = np.inf
 
     ###################################################################
     ###          Statistics
@@ -322,6 +326,7 @@ def calc_flux(
         "aic": aic,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
+        "transience_time": transience_time,
         "ambient_mass_fraction": ambient_mass_fraction,
         "ambient_gas_concentration": ambient_gas_concentration,
         "gas_mass_concentration": c,

@@ -60,11 +60,12 @@ for f in flist:
     
         print('Statistics')
         print('----------')
-        print("R squared      = %.4f "% results['r_squared'])
-        print("durbin watson  = %.2f "% results['durbin_watson'])
-        print("shapiro wilk w = %.2f "% results['shapiro_wilk_w'])
-        print("shapiro wilk p = %.2e "% results['shapiro_wilk_p'])
-        print("AIC            = %.2f "% results['aic'])
+        print("R squared       = %.4f "% results['r_squared'])
+        print("durbin watson   = %.2f "% results['durbin_watson'])
+        print("shapiro wilk w  = %.2f "% results['shapiro_wilk_w'])
+        print("shapiro wilk p  = %.2e "% results['shapiro_wilk_p'])
+        print("AIC             = %.2f "% results['aic'])
+        print("transience time = %.2f "% results['transience_time'])
         print()
     
         ambient_gas_concentration = results['ambient_gas_concentration'] * 1e9
