@@ -65,6 +65,7 @@ for f in flist:
         print("shapiro wilk w  = %.2f "% results['shapiro_wilk_w'])
         print("shapiro wilk p  = %.2e "% results['shapiro_wilk_p'])
         print("AIC             = %.2f "% results['aic'])
+        print("onset time      = %.2f "% results['onset_time'])
         print("transience time = %.2f "% results['transience_time'])
         print()
     

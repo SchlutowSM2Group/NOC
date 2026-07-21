@@ -237,7 +237,7 @@ def calc_flux(
             tau.squeeze(),
             phi.squeeze(),
             p0=(0.1, 0.5, 1.0, 1.0, 1.0),
-            bounds=((-0.1, -np.inf, -np.inf, -np.inf, 0.0), (0.9, np.inf, np.inf, np.inf, np.inf)),
+            bounds=((-1.0, -np.inf, -np.inf, -np.inf, 0.0), (1.0, np.inf, np.inf, np.inf, np.inf)),
             check_finite=True,
             nan_policy="omit",
             method="trf"
@@ -267,6 +267,7 @@ def calc_flux(
     transience_time = 1.0 / Dsqr * tdel
     if transience_time > 10 * tdel:
         transience_time = np.inf
+    onset_time = t0 * tdel
 
     ###################################################################
     ###          Statistics
@@ -326,6 +327,7 @@ def calc_flux(
         "aic": aic,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
+        "onset_time": onset_time,
         "transience_time": transience_time,
         "ambient_mass_fraction": ambient_mass_fraction,
         "ambient_gas_concentration": ambient_gas_concentration,
