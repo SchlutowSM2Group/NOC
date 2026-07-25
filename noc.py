@@ -19,6 +19,8 @@ def calc_flux(
     in_units="mol mol-1 dry air",
     out_units="kg m-2 s-1",
     water_concentration=0.0,
+    window_offset=10.0,
+    window_slope=1.5
 ):
     """
     Compute soil flux using the Non-Steady-State Open Flux Chamber method.
@@ -45,6 +47,10 @@ def calc_flux(
         Output flux units.
     water_concentration : float or array_like, default 0.0
         Water vapor concentration for dilution correction, in units matching `in_units`.
+    window_offset : float, default 10.0
+        Offset for optimal fitting window size [s]
+    window_slope : float, default 1.5
+        Slope for optimal fitting window size
 
     Returns
     -------
@@ -184,6 +190,20 @@ def calc_flux(
     
         return gas_concentration # in SI units
 
+
+    def _fit(tau_data, phi_data):
+        return curve_fit(
+            _fit_func,
+            tau_data.squeeze(),
+            phi_data.squeeze(),
+            p0=(0.1, 0.5, 1.0, 1.0, 1.0),
+            bounds=((-1.0, -np.inf, -np.inf, -np.inf, 0.0), (1.0, np.inf, np.inf, np.inf, np.inf)),
+            check_finite=True,
+            nan_policy="omit",
+            method="trf"
+        )
+
+
     ###################################################################
     ###               Converting                                    ###
     ###################################################################
@@ -231,18 +251,6 @@ def calc_flux(
     ###################################################################
     ###         Fit model                                           ###
     ###################################################################
-    def _fit(tau_data, phi_data):
-        return curve_fit(
-            _fit_func,
-            tau_data.squeeze(),
-            phi_data.squeeze(),
-            p0=(0.1, 0.5, 1.0, 1.0, 1.0),
-            bounds=((-1.0, -np.inf, -np.inf, -np.inf, 0.0), (1.0, np.inf, np.inf, np.inf, np.inf)),
-            check_finite=True,
-            nan_policy="omit",
-            method="trf"
-        )
-
     try:
         # First pass: fit the full record to estimate the timescales
         popt, pcov = _fit(tau, phi)
@@ -251,7 +259,8 @@ def calc_flux(
         # Empirically optimal fitting window: onset + 1.5 * transience + 10 s
         onset_time = t0 * tdel
         transience_time = np.inf if Dsqr == 0.0 else 1.0 / Dsqr * tdel
-        window_end = onset_time + 1.5 * transience_time + 10.0  # [s] measured from tbeg
+
+        window_end = onset_time + window_slope * transience_time + window_offset  # [s] measured from tbeg
 
         # Second pass: refit within the optimal window (unless it spans the whole record)
         window = ((time - tbeg) <= window_end).squeeze()
