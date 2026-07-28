@@ -69,20 +69,28 @@ def calc_flux(
             Shapiro-Wilk test statistic.
         shapiro_wilk_p : float
             Shapiro-Wilk p-value.
+        aic : float
+            Akaike Information Criterion of the fit.
         first_order_pi : float
             First-order Buckingham Pi term.
         second_order_pi : float
             Second-order Buckingham Pi term.
+        onset_time : float
+            Onset time (lag before the relaxation begins) [s].
+        transience_time : float
+            Transience (relaxation) time scale [s]; inf if not resolved within the record.
         ambient_mass_fraction : float
             Background gas mass fraction [kg kg-1].
         ambient_gas_concentration : float
             Background gas concentration in `in_units`.
-        gas_mass_fraction : array
-            Input gas concentration converted to mass fraction [kg kg-1].
+        gas_mass_concentration : array
+            Input gas concentration converted to mass concentration [kg m-3].
         gas_mass_fraction_fit : array
             Fitted gas mass fraction curve [kg kg-1].
         gas_concentration_fit : array
             Fitted gas concentration curve in `in_units`.
+        gas_mass_concentration_fit : array
+            Fitted gas mass concentration curve [kg m-3].
     """
 
     # Molecular masses [g mol-1]
@@ -102,15 +110,13 @@ def calc_flux(
     ###################################################################
     ###               Auxiliary Functions                           ###
     ###################################################################
-    def _coth(x):
-        """Hyperbolic cotangent."""
-        # return np.cosh(x) / np.sinh(x)
-        return 1.0 / np.tanh(x)
-    
-    
     def _fit_func(t, t0, p0, p1, p2, p3):
-        """Fitting function for the NOC model."""
-        return np.where(t < t0, p0, p0 + p1 / (p2 + p3 * _coth(p3 * (t - t0))))
+        """
+        Fitting function for the NOC model.
+        """
+        u = np.maximum(t - t0, 0.0)
+        g = np.tanh(p3 * u)
+        return np.where(t < t0, p0, p0 + p1 * g / (p2 * g + p3))
     
     def _density(air_pressure, air_temperature, water_mass_fraction):
     
