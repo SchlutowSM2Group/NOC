@@ -1,7 +1,25 @@
 """
-NOC - Non-Steady-State Open Chamber Extended
+NOC - Non-Steady-State Open Chamber
 
-Soil greenhouse gas flux calculation using the Non-Steady-State Open Flux Chamber method.
+Soil greenhouse gas flux calculation using the Non-Steady-State Open
+Flux Chamber method.
+
+Copyright (C) 2025-2026 Mark Schlutow
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Author:  Mark Schlutow <mschlutow@bgc-jena.mpg.de>
 """
 
 import numpy as np
@@ -69,6 +87,9 @@ def calc_flux(
             Shapiro-Wilk test statistic.
         shapiro_wilk_p : float
             Shapiro-Wilk p-value.
+        residual_autocorr : float
+            Lag-1 residual autocorrelation (rho ~ 1 - durbin_watson / 2), clipped
+            to [0, 0.99]; used to inflate std_dev for autocorrelated noise.
         aic : float
             Akaike Information Criterion of the fit.
         first_order_pi : float
@@ -105,6 +126,10 @@ def calc_flux(
     # Specific gas constants [J kg-1 K-1]
     GAS_CONSTANT_AIR = 287.05
     GAS_CONSTANT_H2O = 462.0
+
+    # Minimum lag-1 residual autocorrelation below which the noise is treated as
+    # white and the flux uncertainty is left uncorrected.
+    RHO_MIN = 0.05
     
     
     ###################################################################
@@ -313,6 +338,17 @@ def calc_flux(
     diffs = np.diff(residuals, n=1, axis=0)
     durbin_watson = np.sum(diffs**2) / rss
 
+    # Correct the flux uncertainty for slowly-varying, autocorrelated noise
+    # (drifting background + wind). The flux estimate is left unchanged; only its
+    # standard deviation is inflated by the effective-sample-size factor for AR(1)
+    # noise, sqrt((1 + rho) / (1 - rho)). The lag-1 residual autocorrelation is
+    # read straight from the Durbin-Watson statistic, rho ~ 1 - durbin_watson / 2.
+    # Skipped when the noise is effectively white (rho < RHO_MIN).
+    residual_autocorr = 1.0 - durbin_watson / 2.0
+    residual_autocorr = min(max(float(residual_autocorr), 0.0), 0.99)
+    if residual_autocorr >= RHO_MIN:
+        stddev_si *= np.sqrt((1.0 + residual_autocorr) / (1.0 - residual_autocorr))
+
     # Shapiro Wilk test for normality of the residuals
     sw_stat = shapiro(residuals)
     shapiro_wilk_w, shapiro_wilk_p = sw_stat.statistic, sw_stat.pvalue
@@ -355,6 +391,7 @@ def calc_flux(
         "durbin_watson": durbin_watson,
         "shapiro_wilk_w": shapiro_wilk_w,
         "shapiro_wilk_p": shapiro_wilk_p,
+        "residual_autocorr": residual_autocorr,
         "aic": aic,
         "first_order_pi": first_order_pi,
         "second_order_pi": second_order_pi,
