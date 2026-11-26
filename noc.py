@@ -38,7 +38,8 @@ def calc_flux(
     out_units="kg m-2 s-1",
     water_concentration=0.0,
     window_offset=10.0,
-    window_slope=1.5
+    window_slope=1.5,
+    optimize_fitting_window=True
 ):
     """
     Compute soil flux using the Non-Steady-State Open Flux Chamber method.
@@ -69,6 +70,8 @@ def calc_flux(
         Offset for optimal fitting window size [s]
     window_slope : float, default 1.5
         Slope for optimal fitting window size
+    optimize_fitting_window : boolean
+        If true, finds best fitting window for highest r_squared
 
     Returns
     -------
@@ -286,21 +289,25 @@ def calc_flux(
         # First pass: fit the full record to estimate the timescales
         popt, pcov = _fit(tau, phi)
         t0, c0, F0, L, Dsqr = popt
+        tau_fit, phi_fit = tau, phi
 
-        # Empirically optimal fitting window: onset + 1.5 * transience + 10 s
-        onset_time = t0 * tdel
-        transience_time = np.inf if Dsqr == 0.0 else 1.0 / Dsqr * tdel
+        if optimize_fitting_window:
 
-        window_end = onset_time + window_slope * transience_time + window_offset  # [s] measured from tbeg
+            # Empirically optimal fitting window: onset + 1.5 * transience + 10 s
+            onset_time = t0 * tdel
+            transience_time = np.inf if Dsqr == 0.0 else 1.0 / Dsqr * tdel
 
-        # Second pass: refit within the optimal window (unless it spans the whole record)
-        window = ((time - tbeg) <= window_end).squeeze()
-        if np.isfinite(window_end) and not np.all(window) and np.count_nonzero(window) >= 5:
-            tau_fit, phi_fit = tau[window], phi[window]
-            popt, pcov = _fit(tau_fit, phi_fit)
-            t0, c0, F0, L, Dsqr = popt
-        else:
-            tau_fit, phi_fit = tau, phi
+            window_end = onset_time + window_slope * transience_time + window_offset  # [s] measured from tbeg
+
+            # Second pass: refit within the optimal window (unless it spans the whole record)
+            window = ((time - tbeg) <= window_end).squeeze()
+            if np.isfinite(window_end) and not np.all(window) and np.count_nonzero(window) >= 5:
+                tau_fit, phi_fit = tau[window], phi[window]
+                popt, pcov = _fit(tau_fit, phi_fit)
+                t0, c0, F0, L, Dsqr = popt
+            else:
+                tau_fit, phi_fit = tau, phi
+                
     except RuntimeError as e:
          print(f"Warning: curve_fit failed to converge: {e}")
          return None
